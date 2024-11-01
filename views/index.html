@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1 id="countEl">0</h1>
+        <button onclick="handleClick()">Count</button>
+    </div>
+
+    <script>
+        let count = 0;
+
+        const handleClick = () =>{
+            count += 1;
+            document.getElementById('countEl').style.scale = 1.5;
+            setTimeout(()=>{
+                document.getElementById('countEl').style.scale = 1;
+            }, 100)
+
+
+            document.getElementById('countEl').innerText = count
+        }
+    </script>
+</body>
+</html>
