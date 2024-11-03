@@ -34,6 +34,9 @@ app.use("/logout", require("./routes/api/logout"));
 app.use("/reset-password", require("./routes/api/resetPassword"));
 app.use("/users", require("./routes/api/users"));
 
+app.use("/api/farmers/auth", require("./routes/api/farmers/auth"));
+app.use("/api/farmers/account", require("./routes/api/farmers/account"));
+
 // protected routes
 app.use(verifyJWT);
 
