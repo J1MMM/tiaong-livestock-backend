@@ -106,12 +106,22 @@ const registerFarmer = async (req, res) => {
 
     const verificationCode = generateVerificationCode();
 
-    const result = await PendingFarmer.create({
-      ...data,
-      password: hashedPwd,
-      verificationCode,
-    });
+    const foundUser = await PendingFarmer.findOne({ email: data.email });
+    let userID = "";
 
+    if (foundUser) {
+      foundUser.verificationCode = verificationCode;
+      foundUser.password = hashedPwd;
+      userID = foundUser.id;
+      await foundUser.save();
+    } else {
+      const result = await PendingFarmer.create({
+        ...data,
+        password: hashedPwd,
+        verificationCode,
+      });
+      userID = result.id;
+    }
     const transport = nodeMailer.createTransport({
       host: "smtp.gmail.com",
       port: "587",
@@ -167,7 +177,7 @@ const registerFarmer = async (req, res) => {
       html: html,
     });
 
-    res.status(201).json(result.id);
+    res.status(201).json(userID);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
