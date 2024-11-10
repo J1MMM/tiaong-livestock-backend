@@ -2,7 +2,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Farmer = require("../model/Farmer");
 const nodeMailer = require("nodemailer");
-const PendingFarmer = require("../model/PendingFarmer");
 const { v4 } = require("uuid");
 
 function generateVerificationCode() {
@@ -21,11 +20,15 @@ const handleLogin = async (req, res) => {
   try {
     console.log(password);
     const foundUser = await Farmer.findOne({
-      referenceNo: referenceNo,
+      $or: [{ email: referenceNo }, { referenceNo: referenceNo }],
       archive: false,
-      //   isApprove: true,
+      emailVerified: true,
+      // isApprove: true, // Uncomment if needed
     });
     if (!foundUser) {
+      return res.status(401).json({ message: "Unauthorized: User not found" });
+    }
+    if (!foundUser.emailVerified) {
       return res.status(401).json({ message: "Unauthorized: User not found" });
     }
 
@@ -38,21 +41,18 @@ const handleLogin = async (req, res) => {
 
     foundUser.refreshToken = null; // Clear existing refresh token
 
-    const id = foundUser._id;
-
     const accessToken = jwt.sign(
       {
         UserInfo: {
-          id: id,
-          referenceNo: foundUser.referenceNo,
+          id: foundUser.id,
         },
       },
       process.env.ACCESS_TOKEN_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: "1d" }
     );
 
     const refreshToken = jwt.sign(
-      { referenceNo: foundUser.referenceNo },
+      { id: foundUser.id },
       process.env.REFRESH_TOKEN_SECRET,
       { expiresIn: "7d" }
     );
@@ -63,7 +63,7 @@ const handleLogin = async (req, res) => {
     // Send both tokens back to the client
     console.log("success");
     const { password: userPass, ...farmerData } = foundUser.toObject(); // Convert Mongoose document to plain object and remove password
-    return res.json({ ...farmerData, accessToken }); // Send back the data without password
+    return res.json({ ...farmerData, accessToken, refreshToken }); // Send back the data without password
   } catch (error) {
     console.error("Login Error: ", error);
     res.status(500).json({ message: "Internal server error" });
@@ -91,6 +91,7 @@ const registerFarmer = async (req, res) => {
   try {
     const duplicate = await Farmer.findOne({
       email: data.email,
+      emailVerified: true,
     }).exec();
 
     if (duplicate)
@@ -106,7 +107,7 @@ const registerFarmer = async (req, res) => {
 
     const verificationCode = generateVerificationCode();
 
-    const foundUser = await PendingFarmer.findOne({ email: data.email });
+    const foundUser = await Farmer.findOne({ email: data.email });
     let userID = "";
 
     if (foundUser) {
@@ -115,7 +116,7 @@ const registerFarmer = async (req, res) => {
       userID = foundUser.id;
       await foundUser.save();
     } else {
-      const result = await PendingFarmer.create({
+      const result = await Farmer.create({
         ...data,
         password: hashedPwd,
         verificationCode,
@@ -154,7 +155,8 @@ const registerFarmer = async (req, res) => {
                    <div style="width: 100%; background-color: #F5F5F3; padding: 80px 10px; box-sizing: border-box">
                         <div style="width: 100%; background-color: #FFF; padding: 30px; max-width: 550px; margin: auto; box-sizing: border-box">
                             <h1 style="margin: 0; text-align: start;  font-size: x-large">Tiaong Livestock Management System</h1>
-                            <h1 style="margin: 0; text-align: start; font-weight: bold; font-size: x-large">Hi, ${data.email}!</h1>
+                            <br />
+                            <h1 style="margin: 0; text-align: start; font-weight: bold; font-size: x-large">Hello,</h1>
                             <p style="text-align: start;">Thank you for joining us. We're glad to have you on board.</p>
                             <p style="text-align: start;">You're receiving this e-mail because you have registered in our Livestock Management System. You now have a verification code. This verification code is only valid for the next 15 minutes.</p>
                             <h1 style="margin: 0; text-align: start;  font-size: xx-large">${verificationCode}</h1>
@@ -188,7 +190,7 @@ const resendVerification = async (req, res) => {
 
   if (!id || !email) return res.status(400).json({ message: "Bad Request" });
 
-  const foundUser = await PendingFarmer.findOne({
+  const foundUser = await Farmer.findOne({
     _id: id,
   });
 
@@ -231,7 +233,8 @@ const resendVerification = async (req, res) => {
                    <div style="width: 100%; background-color: #F5F5F3; padding: 80px 10px; box-sizing: border-box">
                         <div style="width: 100%; background-color: #FFF; padding: 30px; max-width: 550px; margin: auto; box-sizing: border-box">
                             <h1 style="margin: 0; text-align: start;  font-size: x-large">Tiaong Livestock Management System</h1>
-                            <h1 style="margin: 0; text-align: start; font-weight: bold; font-size: x-large">Hi, ${email}!</h1>
+                            <br />
+                            <h1 style="margin: 0; text-align: start; font-weight: bold; font-size: x-large">Hello,</h1>
                             <p style="text-align: start;">Thank you for joining us. We're glad to have you on board.</p>
                             <p style="text-align: start;">You're receiving this e-mail because you have registered in our Livestock Management System. You now have a verification code. This verification code is only valid for the next 15 minutes.</p>
                             <h1 style="margin: 0; text-align: start;  font-size: xx-large">${verificationCode}</h1>
@@ -269,7 +272,7 @@ const verifyCode = async (req, res) => {
       return res.status(400).json({ message: "Bad Request" });
     }
 
-    const foundUser = await PendingFarmer.findOne({ _id: id });
+    const foundUser = await Farmer.findOne({ _id: id });
     if (!foundUser) {
       return res.status(401).json({ message: "Unauthorized: User not found" });
     }
@@ -384,9 +387,116 @@ const archiveFarmer = async (req, res) => {
   }
 };
 
+const savePendingAccount = async (req, res) => {
+  // console.log(req.body);
+
+  try {
+    if (!req.body.id) return res.status(400).json({ message: "Bad Request" });
+    // Find and update the document with the provided data
+    const updatedFarmer = await Farmer.findByIdAndUpdate(
+      req.body.id, // ID of the document to update
+      {
+        surname: req.body.surname,
+        firstname: req.body.firstname,
+        middlename: req.body.middlename,
+        extensionName: req.body.extensionName,
+        sex: req.body.sex,
+        houseNo: req.body.houseNo,
+        street: req.body.street,
+        barangay: req.body.barangay,
+        contactNo: req.body.contactNo,
+        birthDate: req.body.birthDate,
+        birthPlace: req.body.birthPlace,
+        religion: req.body.religion,
+        specifyReligion: req.body.specifyReligion,
+        civilStatus: req.body.civilStatus,
+        spouseName: req.body.spouseName,
+        motherMaidenName: req.body.motherMaidenName,
+        householdHead: req.body.householdHead,
+        householdRelationship: req.body.householdRelationship,
+        nameOfHouseholdHead: req.body.nameOfHouseholdHead,
+        numberOfLivingHead: req.body.numberOfLivingHead,
+        noMale: req.body.noMale,
+        noFemale: req.body.noFemale,
+        education: req.body.education,
+        PWD: req.body.PWD,
+        _4ps: req.body._4ps,
+        memberIndigenousGroup: req.body.memberIndigenousGroup,
+        specifyIndigenousGroup: req.body.specifyIndigenousGroup,
+        withGovernmentID: req.body.withGovernmentID,
+        specifyGovernmentID: req.body.specifyGovernmentID,
+        idNumber: req.body.idNumber,
+        memberAssociationOrCooperative: req.body.memberAssociationOrCooperative,
+        specifyAssociationOrCooperative:
+          req.body.specifyAssociationOrCooperative,
+        personToNotifyInCaseEmergency: req.body.personToNotifyInCaseEmergency,
+        contactPersonToNotifyInCaseEmergency:
+          req.body.contactPersonToNotifyInCaseEmergency,
+        livelihood: req.body.livelihood,
+        livestockChecked: req.body.livestockChecked,
+        livestockSpecify: req.body.livestockSpecify,
+        poultryChecked: req.body.poultryChecked,
+        poultrySpecify: req.body.poultrySpecify,
+        landPreparationChecked: req.body.landPreparationChecked,
+        harvestingChecked: req.body.harvestingChecked,
+        kindOfWorkOther: req.body.kindOfWorkOther,
+        kindOfWorkSpecify: req.body.kindOfWorkSpecify,
+        grossAnnualIncome: req.body.grossAnnualIncome,
+        specifyGrossAnnualIncome: req.body.specifyGrossAnnualIncome,
+        idImage: req.body.idImage,
+        userImage: req.body.userImage,
+        emailVerified: true,
+      },
+      { new: true } // Return the updated document
+    );
+
+    // Check if document was found and updated
+    if (!updatedFarmer) {
+      return res.status(404).json({ message: "Farmer not found" });
+    }
+
+    // Send a response confirming successful update
+    res.status(200).json({ message: "Farmer Save to Pending successfully" });
+  } catch (error) {
+    console.log({ message: error.message });
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const handleRefreshToken = async (req, res) => {
+  const { refreshToken } = req.query;
+  console.log(refreshToken);
+  if (!refreshToken) return res.status(401).json({ message: "Bad request" });
+
+  const foundUser = await Farmer.findOne({
+    refreshToken,
+  }).exec();
+  if (!foundUser) return res.status(403).json({ message: "Invalid Token" });
+
+  const id = foundUser._id;
+  // evaluate jwt
+  jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
+    if (err || decoded.id !== foundUser.id) return res.sendStatus(403);
+
+    const accessToken = jwt.sign(
+      {
+        UserInfo: {
+          id: id,
+        },
+      },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.json({ accessToken, isApprove: foundUser.isApprove });
+  });
+};
+
 module.exports = {
   handleLogin,
   registerFarmer,
   resendVerification,
   verifyCode,
+  savePendingAccount,
+  handleRefreshToken,
 };

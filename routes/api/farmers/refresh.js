@@ -1,7 +1,7 @@
 const express = require("express");
 const {
   handleRefreshToken,
-} = require("../../controllers/refreshTokenController");
+} = require("../../../controllers/farmersController");
 const router = express.Router();
 
 router.get("/", handleRefreshToken);
