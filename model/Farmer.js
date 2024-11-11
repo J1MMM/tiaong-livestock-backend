@@ -57,8 +57,8 @@ const farmerSchema = new Schema({
   spouseName: { type: String, trim: true },
   motherMaidenName: { type: String, trim: true },
   householdHead: { type: String, trim: true },
-  householdRelationship: { type: String, trim: true },
   nameOfHouseholdHead: { type: String, trim: true },
+  householdRelationship: { type: String, trim: true },
   numberOfLivingHead: { type: Number, min: 0 },
   noMale: { type: Number, min: 0 },
   noFemale: { type: Number, min: 0 },
@@ -92,6 +92,7 @@ const farmerSchema = new Schema({
 
   idImage: { type: Buffer },
   userImage: { type: Buffer },
+  registeredAt: { type: Date, default: Date.now },
 });
 
 module.exports = mongoose.model("Farmer", farmerSchema);

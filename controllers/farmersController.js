@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 const Farmer = require("../model/Farmer");
 const nodeMailer = require("nodemailer");
 const { v4 } = require("uuid");
+const emailFormat = require("../helper/emailFormat");
 
 function generateVerificationCode() {
   return v4().replace(/-/g, "").slice(0, 8); // Adjust slice length as needed
@@ -133,44 +134,7 @@ const registerFarmer = async (req, res) => {
       },
     });
 
-    const html = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <link rel="preconnect" href="https://fonts.googleapis.com">
-                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
-
-                    <style>
-                        *{
-                            font-family: 'Poppins', sans-serif;
-                        }
-                        p{
-                            font-size: large
-                        }
-                    </style>
-                </head>
-
-                <body>
-                   <div style="width: 100%; background-color: #F5F5F3; padding: 80px 10px; box-sizing: border-box">
-                        <div style="width: 100%; background-color: #FFF; padding: 30px; max-width: 550px; margin: auto; box-sizing: border-box">
-                            <h1 style="margin: 0; text-align: start;  font-size: x-large">Tiaong Livestock Management System</h1>
-                            <br />
-                            <h1 style="margin: 0; text-align: start; font-weight: bold; font-size: x-large">Hello,</h1>
-                            <p style="text-align: start;">Thank you for joining us. We're glad to have you on board.</p>
-                            <p style="text-align: start;">You're receiving this e-mail because you have registered in our Livestock Management System. You now have a verification code. This verification code is only valid for the next 15 minutes.</p>
-                            <h1 style="margin: 0; text-align: start;  font-size: xx-large">${verificationCode}</h1>
-                            <br />
-                            <h1 style="margin: 0; text-align: start; font-size: x-large">Thanks,</h1>
-                            <h1 style="margin: 0; text-align: start; font-size: x-large">Admin</h1>
-                            <br />
-                            <hr />
-                            <p style="text-align: start;">© 2024 Livestock Management System. All Rights Reserved.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-        `;
+    const html = emailFormat(verificationCode);
 
     const info = await transport.sendMail({
       from: "Livestock Management System <livestock.management.system@email.com>",
@@ -211,44 +175,7 @@ const resendVerification = async (req, res) => {
       },
     });
 
-    const html = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <link rel="preconnect" href="https://fonts.googleapis.com">
-                    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-                    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
-
-                    <style>
-                        *{
-                            font-family: 'Poppins', sans-serif;
-                        }
-                        p{
-                            font-size: large
-                        }
-                    </style>
-                </head>
-
-                <body>
-                   <div style="width: 100%; background-color: #F5F5F3; padding: 80px 10px; box-sizing: border-box">
-                        <div style="width: 100%; background-color: #FFF; padding: 30px; max-width: 550px; margin: auto; box-sizing: border-box">
-                            <h1 style="margin: 0; text-align: start;  font-size: x-large">Tiaong Livestock Management System</h1>
-                            <br />
-                            <h1 style="margin: 0; text-align: start; font-weight: bold; font-size: x-large">Hello,</h1>
-                            <p style="text-align: start;">Thank you for joining us. We're glad to have you on board.</p>
-                            <p style="text-align: start;">You're receiving this e-mail because you have registered in our Livestock Management System. You now have a verification code. This verification code is only valid for the next 15 minutes.</p>
-                            <h1 style="margin: 0; text-align: start;  font-size: xx-large">${verificationCode}</h1>
-                            <br />
-                            <h1 style="margin: 0; text-align: start; font-size: x-large">Thanks,</h1>
-                            <h1 style="margin: 0; text-align: start; font-size: x-large">Admin</h1>
-                            <br />
-                            <hr />
-                            <p style="text-align: start;">© 2024 Livestock Management System. All Rights Reserved.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-        `;
+    const html = emailFormat(verificationCode);
 
     const info = await transport.sendMail({
       from: "Livestock Management System <livestock.management.system@email.com>",
@@ -388,11 +315,27 @@ const archiveFarmer = async (req, res) => {
 };
 
 const savePendingAccount = async (req, res) => {
-  // console.log(req.body);
-
   try {
     if (!req.body.id) return res.status(400).json({ message: "Bad Request" });
     // Find and update the document with the provided data
+    const accessToken = jwt.sign(
+      {
+        UserInfo: {
+          id: req.body.id,
+        },
+      },
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: req.body.id },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: "7d" }
+    );
+    const idImageBuffer = Buffer.from(req.body.idImage.data, "base64");
+    const userImageBuffer = Buffer.from(req.body.userImage.data, "base64");
+
     const updatedFarmer = await Farmer.findByIdAndUpdate(
       req.body.id, // ID of the document to update
       {
@@ -443,9 +386,10 @@ const savePendingAccount = async (req, res) => {
         kindOfWorkSpecify: req.body.kindOfWorkSpecify,
         grossAnnualIncome: req.body.grossAnnualIncome,
         specifyGrossAnnualIncome: req.body.specifyGrossAnnualIncome,
-        idImage: req.body.idImage,
-        userImage: req.body.userImage,
+        idImage: idImageBuffer,
+        userImage: userImageBuffer,
         emailVerified: true,
+        refreshToken: refreshToken,
       },
       { new: true } // Return the updated document
     );
@@ -456,7 +400,11 @@ const savePendingAccount = async (req, res) => {
     }
 
     // Send a response confirming successful update
-    res.status(200).json({ message: "Farmer Save to Pending successfully" });
+    res.status(200).json({
+      accessToken,
+      refreshToken,
+      message: "Farmer Save to Pending successfully",
+    });
   } catch (error) {
     console.log({ message: error.message });
     res.status(400).json({ message: error.message });
@@ -465,7 +413,6 @@ const savePendingAccount = async (req, res) => {
 
 const handleRefreshToken = async (req, res) => {
   const { refreshToken } = req.query;
-  console.log(refreshToken);
   if (!refreshToken) return res.status(401).json({ message: "Bad request" });
 
   const foundUser = await Farmer.findOne({

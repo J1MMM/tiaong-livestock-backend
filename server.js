@@ -22,7 +22,7 @@ app.use(logger);
 // middleware for form data
 app.use(express.urlencoded({ extended: false }));
 // middleware for json data
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
 // middleware for cookie
 app.use(cookieParser());
 
@@ -33,6 +33,7 @@ app.use("/refresh", require("./routes/api/refresh"));
 app.use("/logout", require("./routes/api/logout"));
 app.use("/reset-password", require("./routes/api/resetPassword"));
 app.use("/users", require("./routes/api/users"));
+app.use("/approval", require("./routes/api/farmers/approval"));
 
 app.use("/api/farmers/refresh", require("./routes/api/farmers/refresh"));
 app.use("/api/farmers/auth", require("./routes/api/farmers/auth"));
