@@ -93,6 +93,40 @@ const farmerSchema = new Schema({
   idImage: { type: Buffer },
   userImage: { type: Buffer },
   registeredAt: { type: Date, default: Date.now },
+  rejectionReason: {
+    incomplete: {
+      type: Boolean,
+      default: false,
+    },
+    invalidID: {
+      type: Boolean,
+      default: false,
+    },
+    notEligible: {
+      type: Boolean,
+      default: false,
+    },
+    duplicate: {
+      type: Boolean,
+      default: false,
+    },
+    falseInfo: {
+      type: Boolean,
+      default: false,
+    },
+    missingDoc: {
+      type: Boolean,
+      default: false,
+    },
+    others: {
+      type: Boolean,
+      default: false,
+    },
+    specify: {
+      type: String,
+      default: "",
+    },
+  },
 });
 
 module.exports = mongoose.model("Farmer", farmerSchema);
