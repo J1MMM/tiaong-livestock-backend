@@ -34,6 +34,7 @@ app.use("/logout", require("./routes/api/logout"));
 app.use("/reset-password", require("./routes/api/resetPassword"));
 app.use("/users", require("./routes/api/users"));
 app.use("/approval", require("./routes/api/farmers/approval"));
+app.use("/farmers", require("./routes/api/farmers/farmers"));
 
 app.use("/api/farmers/refresh", require("./routes/api/farmers/refresh"));
 app.use("/api/farmers/auth", require("./routes/api/farmers/auth"));

@@ -4,10 +4,97 @@ const Farmer = require("../model/Farmer");
 const nodeMailer = require("nodemailer");
 const { v4 } = require("uuid");
 const emailFormat = require("../helper/emailFormat");
+const dayjs = require("dayjs");
 
 function generateVerificationCode() {
   return v4().replace(/-/g, "").slice(0, 8); // Adjust slice length as needed
 }
+
+const getFarmersData = async (req, res) => {
+  try {
+    const result = await Farmer.find({
+      isApprove: true,
+      archive: false,
+      emailVerified: true,
+    }).lean();
+
+    if (!result || result.length === 0)
+      return res.status(204).json({ message: "No Pending Farmers Data found" });
+
+    const _result = result.map((obj) => {
+      const base64IDImage = obj?.idImage.toString("base64");
+      const base64UserImage = obj?.userImage.toString("base64");
+      const idImage = `data:image/png;base64,${base64IDImage}`;
+      const userImage = `data:image/png;base64,${base64UserImage}`;
+      const fullname = `${obj.firstname} ${obj.middlename} ${obj.surname} ${obj.extensionName}`;
+      const birthDate = dayjs(obj.birthDate).format("MM/DD/YYYY");
+      const id = obj._id;
+
+      return { ...obj, idImage, userImage, fullname, birthDate, id };
+    });
+
+    res.json(_result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const getFarmersArchivedData = async (req, res) => {
+  try {
+    const result = await Farmer.find({
+      isApprove: true,
+      archive: true,
+      emailVerified: true,
+    }).lean();
+
+    if (!result || result.length === 0)
+      return res.status(204).json({ message: "No Pending Farmers Data found" });
+
+    const _result = result.map((obj) => {
+      const base64IDImage = obj?.idImage.toString("base64");
+      const base64UserImage = obj?.userImage.toString("base64");
+      const idImage = `data:image/png;base64,${base64IDImage}`;
+      const userImage = `data:image/png;base64,${base64UserImage}`;
+      const fullname = `${obj.firstname} ${obj.middlename} ${obj.surname} ${obj.extensionName}`;
+      const birthDate = dayjs(obj.birthDate).format("MM/DD/YYYY");
+      const id = obj._id;
+      return { ...obj, idImage, userImage, fullname, birthDate, id };
+    });
+
+    res.json(_result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const handleFarmersArchive = async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ message: `Bad request` });
+
+    const foundUser = await Farmer.findOne({
+      _id: id,
+      archive: false,
+      emailVerified: true,
+      isApprove: true,
+    });
+
+    if (!foundUser)
+      return res.status(404).json({ message: `User with ${id} ID not found` });
+    const datenow = Date.now();
+
+    foundUser.archive = true;
+    foundUser.archivedAt = datenow;
+
+    await foundUser.save();
+    res.sendStatus(200);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 const handleLogin = async (req, res) => {
   console.log("login");
@@ -215,105 +302,6 @@ const verifyCode = async (req, res) => {
   }
 };
 
-const getAllUsers = async (req, res) => {
-  try {
-    const result = await User.find();
-    if (!result) return res.status(204).json({ message: "No students found" });
-    res.json(result);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const checkEmailDuplication = async (req, res) => {
-  try {
-    const result = await User.find({ email: req.body.email });
-    res.json(result);
-  } catch (error) {
-    console.log(error.message);
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const updateFarmer = async (req, res) => {
-  if (!req.body?.id)
-    return res.status(400).json({ message: "ID are required" });
-
-  try {
-    const user = await User.findOne({ _id: req.body.id }).exec();
-    let pwdMatch = false;
-
-    if (req?.body?.password) {
-      pwdMatch = await bcrypt.compare(req.body.password, user.password);
-    } else {
-      pwdMatch = true;
-    }
-
-    const duplicate = await User.findOne({ email: req.body.email }).exec();
-    if (duplicate && duplicate._id != req.body.id)
-      return res.status(409).json({ message: "Email address already in use" });
-
-    if (req?.body?.firstname) user.firstname = req.body.firstname;
-    if (req?.body?.lastname) user.lastname = req.body.lastname;
-    if (req?.body?.middlename) user.middlename = req.body.middlename;
-    if (req?.body?.gender) user.gender = req.body.gender;
-    if (req?.body?.address) user.address = req.body.address;
-    if (req?.body?.contactNo) user.contactNo = req.body.contactNo;
-    if (req?.body?.middlename?.trim() === "") {
-      user.middlename = "";
-    }
-    if (req?.body?.email) user.email = req.body.email;
-    if (req?.body?.password)
-      user.password = await bcrypt.hash(req.body.password, 10);
-    if (req?.body?.role)
-      user.roles = { [req.body.role]: ROLES_LIST[req.body.role] };
-
-    const result = await user.save();
-    res.json({ success: "User updated successfully!", result });
-  } catch (error) {
-    console.log(error);
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const deleteFarmer = async (req, res) => {
-  const { idsToDelete } = req.body;
-  if (!idsToDelete) return res.sendStatus(400);
-
-  try {
-    await User.deleteMany({ _id: { $in: idsToDelete } });
-
-    const result = await User.find();
-
-    res.json(result);
-  } catch (error) {
-    console.log(error);
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const archiveFarmer = async (req, res) => {
-  const { idsToDelete, toAchive } = req.body;
-  if (!idsToDelete || !req.id)
-    return res.status(400).json({ message: "id's are required" });
-
-  const updateOperation = {
-    $set: {
-      archive: toAchive ? true : false,
-    },
-  };
-
-  try {
-    await User.updateMany({ _id: { $in: idsToDelete } }, updateOperation);
-    const users = await User.find();
-
-    res.json(users);
-  } catch (error) {
-    console.log(error.message);
-    res.status(400).json({ message: error.message });
-  }
-};
-
 const savePendingAccount = async (req, res) => {
   try {
     if (!req.body.id) return res.status(400).json({ message: "Bad Request" });
@@ -440,6 +428,9 @@ const handleRefreshToken = async (req, res) => {
 };
 
 module.exports = {
+  getFarmersData,
+  getFarmersArchivedData,
+  handleFarmersArchive,
   handleLogin,
   registerFarmer,
   resendVerification,
