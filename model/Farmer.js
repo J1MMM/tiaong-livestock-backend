@@ -124,9 +124,29 @@ const farmerSchema = new Schema({
   typeofFarm: { type: String },
   rsbsaRegistered: { type: String },
   bioSecLvl: { type: String },
-  totalFarmPopulation: { required: true, type: Number, default: 0 },
   longitude: { type: String },
   latitude: { type: String },
+  livestock: {
+    cow: { required: true, type: Number, default: 0 },
+    goat: { required: true, type: Number, default: 0 },
+    chicken: { required: true, type: Number, default: 0 },
+    duck: { required: true, type: Number, default: 0 },
+    carabao: { required: true, type: Number, default: 0 },
+    pig: { required: true, type: Number, default: 0 },
+    horse: { required: true, type: Number, default: 0 },
+  },
+  mortality: {
+    cow: { required: true, type: Number, default: 0 },
+    goat: { required: true, type: Number, default: 0 },
+    chicken: { required: true, type: Number, default: 0 },
+    duck: { required: true, type: Number, default: 0 },
+    carabao: { required: true, type: Number, default: 0 },
+    pig: { required: true, type: Number, default: 0 },
+    horse: { required: true, type: Number, default: 0 },
+  },
+  totalLivestock: { required: true, type: Number, default: 0 },
+  totalMortality: { required: true, type: Number, default: 0 },
+  totalFarmPopulation: { required: true, type: Number, default: 0 },
 });
 
 module.exports = mongoose.model("Farmer", farmerSchema);

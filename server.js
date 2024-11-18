@@ -41,6 +41,7 @@ app.use("/api/farmers/auth", require("./routes/api/farmers/auth"));
 app.use("/api/farmers/signup", require("./routes/api/farmers/signup"));
 app.use("/api/farmers/resend", require("./routes/api/farmers/resend"));
 app.use("/api/farmers/verify-code", require("./routes/api/farmers/verifyCode"));
+app.use("/api/farmers/livestock", require("./routes/api/farmers/livestock"));
 
 app.use(
   "/api/farmers/pending-account",

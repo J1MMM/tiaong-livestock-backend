@@ -151,7 +151,12 @@ const handleLogin = async (req, res) => {
     // Send both tokens back to the client
     console.log("success");
     const { password: userPass, ...farmerData } = foundUser.toObject(); // Convert Mongoose document to plain object and remove password
-    return res.json({ ...farmerData, accessToken, refreshToken }); // Send back the data without password
+    return res.json({
+      ...farmerData,
+      accessToken,
+      refreshToken,
+      id: foundUser._id,
+    }); // Send back the data without password
   } catch (error) {
     console.error("Login Error: ", error);
     res.status(500).json({ message: "Internal server error" });
@@ -423,7 +428,11 @@ const handleRefreshToken = async (req, res) => {
       { expiresIn: "1d" }
     );
 
-    res.json({ accessToken, isApprove: foundUser.isApprove });
+    res.json({
+      accessToken,
+      isApprove: foundUser.isApprove,
+      id: foundUser._id,
+    });
   });
 };
 
