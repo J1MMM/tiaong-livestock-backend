@@ -3,6 +3,8 @@ const Farmer = require("../model/Farmer");
 const handleUpdateLivestock = async (req, res) => {
   try {
     const { id, category, livestock, count } = req.body;
+    console.log(req.body);
+
     if (!id || !category || !livestock || !count)
       return res.status(400).json({ message: `Bad request` });
 
@@ -17,10 +19,13 @@ const handleUpdateLivestock = async (req, res) => {
       return res.status(404).json({ message: `User with ${id} ID not found` });
 
     if (category == "Add Livestock") {
-      foundUser.livestock[livestock] = foundUser.livestock[livestock] + count;
+      foundUser.livestock[livestock.toLowerCase()] += parseInt(count);
+      foundUser.totalLivestock += parseInt(count);
     } else {
-      foundUser.livestock[livestock] = foundUser.livestock[livestock] - count;
+      foundUser.mortality[livestock.toLowerCase()] += parseInt(count);
+      foundUser.totalMortality += parseInt(count);
     }
+    foundUser.totalFarmPopulation += parseInt(count);
 
     await foundUser.save();
     res.sendStatus(200);

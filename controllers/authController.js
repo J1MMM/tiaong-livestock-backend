@@ -54,7 +54,10 @@ const handleLogin = async (req, res) => {
       secure: isProduction, // Secure cookie only in production
     });
 
-    res.json({ accessToken, fullname });
+    const userImageBuffer = foundUser.userImage.toString("base64");
+    const userImage = `data:image/png;base64,${userImageBuffer}`;
+
+    res.json({ ...foundUser, userImage, accessToken, fullname });
   } catch (error) {
     console.error("Login Error: ", error);
     res.status(500).json({ message: "Internal server error" });

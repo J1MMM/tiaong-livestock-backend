@@ -30,7 +30,14 @@ const getFarmersData = async (req, res) => {
       const birthDate = dayjs(obj.birthDate).format("MM/DD/YYYY");
       const id = obj._id;
 
-      return { ...obj, idImage, userImage, fullname, birthDate, id };
+      return {
+        ...obj,
+        idImage,
+        userImage,
+        fullname,
+        birthDate,
+        id,
+      };
     });
 
     res.json(_result);
@@ -151,8 +158,14 @@ const handleLogin = async (req, res) => {
     // Send both tokens back to the client
     console.log("success");
     const { password: userPass, ...farmerData } = foundUser.toObject(); // Convert Mongoose document to plain object and remove password
+    const userImageBuffer = foundUser.userImage.toString("base64");
+    const userImage = `data:image/png;base64,${userImageBuffer}`;
+    const fullname = `${foundUser.firstname} ${foundUser.middlename} ${foundUser.surname} ${foundUser.extensionName}`;
+
     return res.json({
       ...farmerData,
+      fullname,
+      userImage,
       accessToken,
       refreshToken,
       id: foundUser._id,
@@ -410,7 +423,7 @@ const handleRefreshToken = async (req, res) => {
 
   const foundUser = await Farmer.findOne({
     refreshToken,
-  }).exec();
+  });
   if (!foundUser) return res.status(403).json({ message: "Invalid Token" });
 
   const id = foundUser._id;
@@ -427,8 +440,14 @@ const handleRefreshToken = async (req, res) => {
       process.env.ACCESS_TOKEN_SECRET,
       { expiresIn: "1d" }
     );
+    const userImageBuffer = foundUser.userImage.toString("base64");
+    const userImage = `data:image/png;base64,${userImageBuffer}`;
+    const fullname = `${foundUser.firstname} ${foundUser.middlename} ${foundUser.surname} ${foundUser.extensionName}`;
 
     res.json({
+      ...foundUser._doc,
+      userImage,
+      fullname,
       accessToken,
       isApprove: foundUser.isApprove,
       id: foundUser._id,

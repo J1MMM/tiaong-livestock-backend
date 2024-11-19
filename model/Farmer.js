@@ -144,6 +144,7 @@ const farmerSchema = new Schema({
     pig: { required: true, type: Number, default: 0 },
     horse: { required: true, type: Number, default: 0 },
   },
+
   totalLivestock: { required: true, type: Number, default: 0 },
   totalMortality: { required: true, type: Number, default: 0 },
   totalFarmPopulation: { required: true, type: Number, default: 0 },
