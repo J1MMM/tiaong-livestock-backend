@@ -35,6 +35,7 @@ app.use("/reset-password", require("./routes/api/resetPassword"));
 app.use("/users", require("./routes/api/users"));
 app.use("/approval", require("./routes/api/farmers/approval"));
 app.use("/farmers", require("./routes/api/farmers/farmers"));
+app.use("/announcement", require("./routes/api/farmers/announcement"));
 
 app.use("/api/farmers/refresh", require("./routes/api/farmers/refresh"));
 app.use("/api/farmers/auth", require("./routes/api/farmers/auth"));
@@ -42,6 +43,10 @@ app.use("/api/farmers/signup", require("./routes/api/farmers/signup"));
 app.use("/api/farmers/resend", require("./routes/api/farmers/resend"));
 app.use("/api/farmers/verify-code", require("./routes/api/farmers/verifyCode"));
 app.use("/api/farmers/livestock", require("./routes/api/farmers/livestock"));
+app.use(
+  "/api/farmers/announcement",
+  require("./routes/api/farmers/announcement")
+);
 
 app.use(
   "/api/farmers/pending-account",
