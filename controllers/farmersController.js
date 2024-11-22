@@ -229,6 +229,7 @@ const registerFarmer = async (req, res) => {
       });
       userID = result.id;
     }
+
     const transport = nodeMailer.createTransport({
       host: "smtp.gmail.com",
       port: "587",

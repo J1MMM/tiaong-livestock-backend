@@ -36,6 +36,7 @@ app.use("/users", require("./routes/api/users"));
 app.use("/approval", require("./routes/api/farmers/approval"));
 app.use("/farmers", require("./routes/api/farmers/farmers"));
 app.use("/announcement", require("./routes/api/farmers/announcement"));
+app.use("/livestock", require("./routes/api/farmers/livestock"));
 
 app.use("/api/farmers/refresh", require("./routes/api/farmers/refresh"));
 app.use("/api/farmers/auth", require("./routes/api/farmers/auth"));

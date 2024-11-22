@@ -54,7 +54,7 @@ const handleLogin = async (req, res) => {
       secure: isProduction, // Secure cookie only in production
     });
 
-    const userImageBuffer = foundUser.userImage.toString("base64");
+    const userImageBuffer = foundUser.userImage?.toString("base64");
     const userImage = `data:image/png;base64,${userImageBuffer}`;
 
     res.json({ ...foundUser, userImage, accessToken, fullname });
