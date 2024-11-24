@@ -1,6 +1,8 @@
 const dayjs = require("dayjs");
 const { BRGY_COOR } = require("../helper/shared");
 const Farmer = require("../model/Farmer");
+const rejectionEmailFormat = require("../helper/rejectionEmailFormat");
+const nodeMailer = require("nodemailer");
 
 const getApprovalData = async (req, res) => {
   try {
@@ -78,6 +80,51 @@ const handleReject = async (req, res) => {
     foundUser.archive = true;
     foundUser.rejectionReason = rejectionReason;
     foundUser.rejectedAt = datenow;
+
+    const rejectionList = [];
+
+    if (rejectionReason.incomplete) {
+      rejectionList.push("<li>Incomplete Application</li>");
+    }
+    if (rejectionReason.invalidID) {
+      rejectionList.push("<li>Invalid or Missing ID</li>");
+    }
+    if (rejectionReason.notEligible) {
+      rejectionList.push("<li>Not Eligible (non-farmer)</li>");
+    }
+    if (rejectionReason.duplicate) {
+      rejectionList.push("<li>Duplicate Application</li>");
+    }
+    if (rejectionReason.falseInfo) {
+      rejectionList.push("<li>False Information</li>");
+    }
+    if (rejectionReason.missingDoc) {
+      rejectionList.push("<li>Missing Documents</li>");
+    }
+    if (rejectionReason.others) {
+      rejectionList.push(
+        "<li>Other, Specify: " + rejectionReason.specify + "</li>"
+      );
+    }
+
+    const transport = nodeMailer.createTransport({
+      host: "smtp.gmail.com",
+      port: "587",
+      secure: false,
+      auth: {
+        user: "devjim.emailservice@gmail.com",
+        pass: "vfxdypfebqvgiiyn",
+      },
+    });
+
+    const html = rejectionEmailFormat(foundUser.firstname, rejectionList);
+    console.log(rejectionList);
+    const info = await transport.sendMail({
+      from: "Livestock Management System <livestock.management.system@email.com>",
+      to: foundUser.email,
+      subject: "Notification of Rejected Application",
+      html: html,
+    });
 
     await foundUser.save();
     res.sendStatus(200);

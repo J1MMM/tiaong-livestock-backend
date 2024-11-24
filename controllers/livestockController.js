@@ -1,224 +1,170 @@
 const Farmer = require("../model/Farmer");
+const Livestock = require("../model/Livestock");
 
 function getWeight(value, total) {
-  if (total === 0) return 0.01; // Avoid division by zero, return minimum weight
+  if (total === 0) return 0.001; // Avoid division by zero, return minimum weight
   const percentage = value / total; // Calculate percentage
-  return Math.max(0.01, Math.min(1, percentage)); // Clamp value between 0.1 and 1
+  const clamped = Math.max(0.001, Math.min(1, percentage)); // Clamp value between 0.001 and 1
+  return parseFloat(clamped.toFixed(3)); // Limit to 3 decimal places
 }
 
-const getLivestockAnalytics = async (req, res) => {
+const getTotalPopulation = async () => {
   try {
-    const result = await Farmer.find({
-      isApprove: true,
-      archive: false,
-      emailVerified: true,
-    });
-    if (!result || result.length === 0) {
-      return res.status(404).json({ message: "No data found" });
-    }
-
-    const _result = result.reduce((acc, data) => {
-      // Check if the barangay already exists in the accumulator
-      const existing = acc.find((v) => v.barangay === data.barangay);
-
-      if (existing) {
-        // Update existing barangay's livestock and mortality
-        existing.livestock = {
-          cow: existing.livestock.cow + data.livestock.cow,
-          goat: existing.livestock.goat + data.livestock.goat,
-          chicken: existing.livestock.chicken + data.livestock.chicken,
-          duck: existing.livestock.duck + data.livestock.duck,
-          carabao: existing.livestock.carabao + data.livestock.carabao,
-          pig: existing.livestock.pig + data.livestock.pig,
-          horse: existing.livestock.horse + data.livestock.horse,
-        };
-
-        existing.mortality = {
-          cow: existing.mortality.cow + data.mortality.cow,
-          goat: existing.mortality.goat + data.mortality.goat,
-          chicken: existing.mortality.chicken + data.mortality.chicken,
-          duck: existing.mortality.duck + data.mortality.duck,
-          carabao: existing.mortality.carabao + data.mortality.carabao,
-          pig: existing.mortality.pig + data.mortality.pig,
-          horse: existing.mortality.horse + data.mortality.horse,
-        };
-      } else {
-        // Add new barangay to the accumulator
-        acc.push({
-          barangay: data.barangay,
-          livestock: { ...data.livestock },
-          mortality: { ...data.mortality },
-        });
-      }
-
-      return acc;
-    }, []);
-
-    let totalLCow = 0;
-    let totalLGoat = 0;
-    let totalLChicken = 0;
-    let totalLDuck = 0;
-    let totalLCarabao = 0;
-    let totalLPig = 0;
-    let totalLHorse = 0;
-    let totalMCow = 0;
-    let totalMGoat = 0;
-    let totalMChicken = 0;
-    let totalMDuck = 0;
-    let totalMCarabao = 0;
-    let totalMPig = 0;
-    let totalMHorse = 0;
-
-    _result.map((obj) => {
-      totalLCow += obj.livestock.cow;
-      totalLGoat += obj.livestock.goat;
-      totalLChicken += obj.livestock.chicken;
-      totalLDuck += obj.livestock.duck;
-      totalLCarabao += obj.livestock.carabao;
-      totalLPig += obj.livestock.pig;
-      totalLHorse += obj.livestock.horse;
-      totalMCow += obj.mortality.cow;
-      totalMGoat += obj.mortality.goat;
-      totalMChicken += obj.mortality.chicken;
-      totalMDuck += obj.mortality.duck;
-      totalMCarabao += obj.mortality.carabao;
-      totalMPig += obj.mortality.pig;
-      totalMHorse += obj.mortality.horse;
-    });
-
-    return res.status(200).json({
-      livestock: {
-        cow: totalLCow,
-        goat: totalLGoat,
-        chicken: totalLChicken,
-        duck: totalLDuck,
-        carabao: totalLCarabao,
-        pig: totalLPig,
-        horse: totalLHorse,
+    const totals = await Livestock.aggregate([
+      {
+        $group: {
+          _id: null, // Group everything together
+          totalCowL: { $sum: "$livestock.cow" },
+          totalGoatL: { $sum: "$livestock.goat" },
+          totalChickenL: { $sum: "$livestock.chicken" },
+          totalDuckL: { $sum: "$livestock.duck" },
+          totalCarabaoL: { $sum: "$livestock.carabao" },
+          totalPigL: { $sum: "$livestock.pig" },
+          totalHorseL: { $sum: "$livestock.horse" },
+          totalCowM: { $sum: "$mortality.cow" },
+          totalGoatM: { $sum: "$mortality.goat" },
+          totalChickenM: { $sum: "$mortality.chicken" },
+          totalDuckM: { $sum: "$mortality.duck" },
+          totalCarabaoM: { $sum: "$mortality.carabao" },
+          totalPigM: { $sum: "$mortality.pig" },
+          totalHorseM: { $sum: "$mortality.horse" },
+        },
       },
-
-      mortality: {
-        cow: totalMCow,
-        goat: totalMGoat,
-        chicken: totalMChicken,
-        duck: totalMDuck,
-        carabao: totalMCarabao,
-        pig: totalMPig,
-        horse: totalMHorse,
+      {
+        $project: {
+          _id: 0, // Remove _id
+          livestock: {
+            pig: "$totalPigL",
+            cow: "$totalCowL",
+            goat: "$totalGoatL",
+            chicken: "$totalChickenL",
+            duck: "$totalDuckL",
+            carabao: "$totalCarabaoL",
+            horse: "$totalHorseL",
+          },
+          mortality: {
+            pig: "$totalPigM",
+            cow: "$totalCowM",
+            goat: "$totalGoatM",
+            chicken: "$totalChickenM",
+            duck: "$totalDuckM",
+            carabao: "$totalCarabaoM",
+            horse: "$totalHorseM",
+          },
+        },
       },
-    });
+    ]);
+
+    return totals[0];
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 
-const getLivestockData = async (req, res) => {
+const getTotalCountLivestock = async (req, res) => {
   try {
-    const result = await Farmer.find({
-      isApprove: true,
-      archive: false,
-      emailVerified: true,
-    });
-    if (!result || result.length === 0) {
-      return res.status(404).json({ message: "No data found" });
-    }
+    const result = await getTotalPopulation();
+    return res.status(200).json(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
-    const _result = result.reduce((acc, data) => {
-      // Check if the barangay already exists in the accumulator
-      const existing = acc.find((v) => v.barangay === data.barangay);
+const getHeatmapData = async (req, res) => {
+  try {
+    const total = await getTotalPopulation();
 
-      if (existing) {
-        // Update existing barangay's livestock and mortality
-        existing.livestock = {
-          cow: existing.livestock.cow + data.livestock.cow,
-          goat: existing.livestock.goat + data.livestock.goat,
-          chicken: existing.livestock.chicken + data.livestock.chicken,
-          duck: existing.livestock.duck + data.livestock.duck,
-          carabao: existing.livestock.carabao + data.livestock.carabao,
-          pig: existing.livestock.pig + data.livestock.pig,
-          horse: existing.livestock.horse + data.livestock.horse,
-        };
-
-        existing.mortality = {
-          cow: existing.mortality.cow + data.mortality.cow,
-          goat: existing.mortality.goat + data.mortality.goat,
-          chicken: existing.mortality.chicken + data.mortality.chicken,
-          duck: existing.mortality.duck + data.mortality.duck,
-          carabao: existing.mortality.carabao + data.mortality.carabao,
-          pig: existing.mortality.pig + data.mortality.pig,
-          horse: existing.mortality.horse + data.mortality.horse,
-        };
-      } else {
-        // Add new barangay to the accumulator
-        acc.push({
-          barangay: data.barangay,
-          livestock: { ...data.livestock },
-          mortality: { ...data.mortality },
-        });
-      }
-
-      return acc;
-    }, []);
-
-    let totalLCow = 0;
-    let totalLGoat = 0;
-    let totalLChicken = 0;
-    let totalLDuck = 0;
-    let totalLCarabao = 0;
-    let totalLPig = 0;
-    let totalLHorse = 0;
-    let totalMCow = 0;
-    let totalMGoat = 0;
-    let totalMChicken = 0;
-    let totalMDuck = 0;
-    let totalMCarabao = 0;
-    let totalMPig = 0;
-    let totalMHorse = 0;
-
-    _result.map((obj) => {
-      totalLCow += obj.livestock.cow;
-      totalLGoat += obj.livestock.goat;
-      totalLChicken += obj.livestock.chicken;
-      totalLDuck += obj.livestock.duck;
-      totalLCarabao += obj.livestock.carabao;
-      totalLPig += obj.livestock.pig;
-      totalLHorse += obj.livestock.horse;
-      totalMCow += obj.mortality.cow;
-      totalMGoat += obj.mortality.goat;
-      totalMChicken += obj.mortality.chicken;
-      totalMDuck += obj.mortality.duck;
-      totalMCarabao += obj.mortality.carabao;
-      totalMPig += obj.mortality.pig;
-      totalMHorse += obj.mortality.horse;
-    });
-
-    const final_result = _result.map((obj) => ({
-      ...obj,
-      livestock: {
-        cow: getWeight(obj.livestock.cow, totalLCow),
-        goat: getWeight(obj.livestock.goat, totalLGoat),
-        chicken: getWeight(obj.livestock.chicken, totalLChicken),
-        duck: getWeight(obj.livestock.duck, totalLDuck),
-        carabao: getWeight(obj.livestock.carabao, totalLCarabao),
-        pig: getWeight(obj.livestock.pig, totalLPig),
-        horse: getWeight(obj.livestock.horse, totalLHorse),
+    const result = await Livestock.aggregate([
+      {
+        $group: {
+          _id: "$barangay",
+          totalCowL: { $sum: "$livestock.cow" },
+          totalGoatL: { $sum: "$livestock.goat" },
+          totalChickenL: { $sum: "$livestock.chicken" },
+          totalDuckL: { $sum: "$livestock.duck" },
+          totalCarabaoL: { $sum: "$livestock.carabao" },
+          totalPigL: { $sum: "$livestock.pig" },
+          totalHorseL: { $sum: "$livestock.horse" },
+          totalCowM: { $sum: "$mortality.cow" },
+          totalGoatM: { $sum: "$mortality.goat" },
+          totalChickenM: { $sum: "$mortality.chicken" },
+          totalDuckM: { $sum: "$mortality.duck" },
+          totalCarabaoM: { $sum: "$mortality.carabao" },
+          totalPigM: { $sum: "$mortality.pig" },
+          totalHorseM: { $sum: "$mortality.horse" },
+        },
       },
+      {
+        $project: {
+          _id: 0,
+          barangay: "$_id",
+          livestock: {
+            cow: { $divide: ["$totalCowL", total.livestock.cow] },
+            goat: { $divide: ["$totalGoatL", total.livestock.goat] },
+            chicken: { $divide: ["$totalChickenL", total.livestock.chicken] },
+            duck: { $divide: ["$totalDuckL", total.livestock.duck] },
+            carabao: { $divide: ["$totalCarabaoL", total.livestock.carabao] },
+            pig: { $divide: ["$totalPigL", total.livestock.pig] },
+            horse: { $divide: ["$totalHorseL", total.livestock.horse] },
+          },
+          mortality: {
+            cow: { $divide: ["$totalCowM", total.mortality.cow] },
+            goat: { $divide: ["$totalGoatM", total.mortality.goat] },
+            chicken: { $divide: ["$totalChickenM", total.mortality.chicken] },
+            duck: { $divide: ["$totalDuckM", total.mortality.duck] },
+            carabao: { $divide: ["$totalCarabaoM", total.mortality.carabao] },
+            pig: { $divide: ["$totalPigM", total.mortality.pig] },
+            horse: { $divide: ["$totalHorseM", total.mortality.horse] },
+          },
+        },
+      },
+    ]);
 
+    const adjustedResult = result.map((item) => ({
+      barangay: item.barangay,
+      livestock: {
+        cow: Number(Math.max(0.01, Math.min(item.livestock.cow, 1)).toFixed(3)),
+        goat: Number(
+          Math.max(0.01, Math.min(item.livestock.goat, 1)).toFixed(3)
+        ),
+        chicken: Number(
+          Math.max(0.01, Math.min(item.livestock.chicken, 1)).toFixed(3)
+        ),
+        duck: Number(
+          Math.max(0.01, Math.min(item.livestock.duck, 1)).toFixed(3)
+        ),
+        carabao: Number(
+          Math.max(0.01, Math.min(item.livestock.carabao, 1)).toFixed(3)
+        ),
+        pig: Number(Math.max(0.01, Math.min(item.livestock.pig, 1)).toFixed(3)),
+        horse: Number(
+          Math.max(0.01, Math.min(item.livestock.horse, 1)).toFixed(3)
+        ),
+      },
       mortality: {
-        cow: getWeight(obj.mortality.cow, totalMCow),
-        goat: getWeight(obj.mortality.goat, totalMGoat),
-        chicken: getWeight(obj.mortality.chicken, totalMChicken),
-        duck: getWeight(obj.mortality.duck, totalMDuck),
-        carabao: getWeight(obj.mortality.carabao, totalMCarabao),
-        pig: getWeight(obj.mortality.pig, totalMPig),
-        horse: getWeight(obj.mortality.horse, totalMHorse),
+        cow: Number(Math.max(0.01, Math.min(item.mortality.cow, 1)).toFixed(3)),
+        goat: Number(
+          Math.max(0.01, Math.min(item.mortality.goat, 1)).toFixed(3)
+        ),
+        chicken: Number(
+          Math.max(0.01, Math.min(item.mortality.chicken, 1)).toFixed(3)
+        ),
+        duck: Number(
+          Math.max(0.01, Math.min(item.mortality.duck, 1)).toFixed(3)
+        ),
+        carabao: Number(
+          Math.max(0.01, Math.min(item.mortality.carabao, 1)).toFixed(3)
+        ),
+        pig: Number(Math.max(0.01, Math.min(item.mortality.pig, 1)).toFixed(3)),
+        horse: Number(
+          Math.max(0.01, Math.min(item.mortality.horse, 1)).toFixed(3)
+        ),
       },
     }));
 
-    console.log(final_result);
-
-    return res.status(200).json(final_result);
+    return res.status(200).json(adjustedResult);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
@@ -228,10 +174,13 @@ const getLivestockData = async (req, res) => {
 const handleUpdateLivestock = async (req, res) => {
   try {
     const { id, category, livestock, count } = req.body;
-    console.log(req.body);
-
     if (!id || !category || !livestock || !count)
       return res.status(400).json({ message: `Bad request` });
+
+    if (isNaN(count) || count <= 0)
+      return res
+        .status(400)
+        .json({ message: "Count must be a valid positive number" });
 
     const foundUser = await Farmer.findOne({
       _id: id,
@@ -243,24 +192,173 @@ const handleUpdateLivestock = async (req, res) => {
     if (!foundUser)
       return res.status(404).json({ message: `User with ${id} ID not found` });
 
-    if (category == "Add Livestock") {
-      foundUser.livestock[livestock.toLowerCase()] += parseInt(count);
-      foundUser.totalLivestock += parseInt(count);
-    } else {
-      foundUser.mortality[livestock.toLowerCase()] += parseInt(count);
-      foundUser.totalMortality += parseInt(count);
-    }
-    foundUser.totalFarmPopulation += parseInt(count);
+    const field = category === "Add Livestock" ? "livestock" : "mortality";
 
+    const recordData = {
+      farmerID: foundUser._id,
+      barangay: foundUser.barangay,
+      createdAt: new Date(),
+      [field]: {
+        [livestock?.toLowerCase()]: parseInt(count),
+      },
+    };
+    // update farmers total livestock and mortality
+    const field2 =
+      category === "Add Livestock" ? "totalLivestock" : "totalMortality";
+
+    foundUser[field2] += parseInt(count);
+    foundUser.totalFarmPopulation += parseInt(count);
     await foundUser.save();
+
+    await Livestock.create(recordData);
     res.sendStatus(200);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+const getYearlyRecordData = async (req, res) => {
+  try {
+    const { year } = req.body;
+    if (!year) return res.sendStatus(400);
+
+    const result = await Livestock.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(`${year}-01-01`), // Start of the year
+            $lt: new Date(`${year + 1}-01-01`), // Start of next year
+          },
+        },
+      },
+      {
+        $project: {
+          month: { $month: "$createdAt" }, // Extract month from the createdAt date
+          livestock: 1,
+          mortality: 1,
+        },
+      },
+      {
+        $group: {
+          _id: "$month",
+          totalCowL: { $sum: "$livestock.cow" },
+          totalGoatL: { $sum: "$livestock.goat" },
+          totalChickenL: { $sum: "$livestock.chicken" },
+          totalDuckL: { $sum: "$livestock.duck" },
+          totalCarabaoL: { $sum: "$livestock.carabao" },
+          totalPigL: { $sum: "$livestock.pig" },
+          totalHorseL: { $sum: "$livestock.horse" },
+          totalCowM: { $sum: "$mortality.cow" },
+          totalGoatM: { $sum: "$mortality.goat" },
+          totalChickenM: { $sum: "$mortality.chicken" },
+          totalDuckM: { $sum: "$mortality.duck" },
+          totalCarabaoM: { $sum: "$mortality.carabao" },
+          totalPigM: { $sum: "$mortality.pig" },
+          totalHorseM: { $sum: "$mortality.horse" },
+        },
+      },
+      {
+        $sort: { _id: 1 }, // Sort by month
+      },
+    ]);
+
+    // Initialize arrays with null for 12 months
+    const livestockData = new Array(12).fill(null);
+    const mortalityData = new Array(12).fill(null);
+    const xLabels = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+
+    // Loop through the result to populate the monthly data
+    result.forEach((item) => {
+      const monthIndex = item._id - 1; // MongoDB months are 1-based, so subtract 1 to align with the 0-based index
+      livestockData[monthIndex] =
+        item.totalCowL +
+        item.totalGoatL +
+        item.totalChickenL +
+        item.totalDuckL +
+        item.totalCarabaoL +
+        item.totalPigL +
+        item.totalHorseL;
+      mortalityData[monthIndex] =
+        item.totalCowM +
+        item.totalGoatM +
+        item.totalChickenM +
+        item.totalDuckM +
+        item.totalCarabaoM +
+        item.totalPigM +
+        item.totalHorseM;
+    });
+
+    // Prepare the response with the filled data
+    const response = {
+      livestockData,
+      mortalityData,
+      xLabels,
+    };
+
+    res.json(response); // Send the response
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const getBrangayRecords = async (req, res) => {
+  try {
+    const result = await Livestock.aggregate([
+      {
+        $group: {
+          _id: "$barangay", // Group by barangay
+          totalLivestock: {
+            $sum: {
+              $add: [
+                "$livestock.carabao",
+                "$livestock.chicken",
+                "$livestock.cow",
+                "$livestock.duck",
+                "$livestock.goat",
+                "$livestock.horse",
+                "$livestock.pig",
+              ],
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0, // Exclude the default MongoDB ID
+          barangay: "$_id", // Rename _id to barangay for clarity
+          totalLivestock: 1, // Include the totalLivestock field
+        },
+      },
+      {
+        $sort: { barangay: 1 }, // Sort by barangay in ascending order (alphabetically)
+      },
+    ]);
+
+    return res.status(200).json(result);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
 module.exports = {
-  getLivestockData,
+  getHeatmapData,
+  getTotalCountLivestock,
   handleUpdateLivestock,
-  getLivestockAnalytics,
+  getYearlyRecordData,
+  getBrangayRecords,
 };

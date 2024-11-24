@@ -25,7 +25,7 @@ const emailFormat = (verificationCode) => {
               <h1 style="margin: 0; text-align: start; font-weight: bold; font-size: x-large">Hello,</h1>
               <p style="text-align: start;">Thank you for joining us. We're glad to have you on board.</p>
               <p style="text-align: start;">You're receiving this e-mail because you have registered in our Livestock Management System. You now have a verification code. This verification code is only valid for the next 15 minutes.</p>
-              <h1 style="margin: 0; text-align: start;  font-size: xx-large">${verificationCode}</h1>
+              <h1 style="margin: 0; text-align: start;  font-size: xx-large; color: #007bff">${verificationCode}</h1>
               <br />
               <h1 style="margin: 0; text-align: start; font-size: x-large">Thanks,</h1>
               <h1 style="margin: 0; text-align: start; font-size: x-large">Admin</h1>

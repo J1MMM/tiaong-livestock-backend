@@ -198,6 +198,7 @@ const registerFarmer = async (req, res) => {
     const duplicate = await Farmer.findOne({
       email: data.email,
       emailVerified: true,
+      archive: false,
     }).exec();
 
     if (duplicate)
