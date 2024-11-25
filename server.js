@@ -48,6 +48,7 @@ app.use(
   "/api/farmers/announcement",
   require("./routes/api/farmers/announcement")
 );
+app.use("/api/farmers/analytics", require("./routes/api/farmers/livestock"));
 
 app.use(
   "/api/farmers/pending-account",

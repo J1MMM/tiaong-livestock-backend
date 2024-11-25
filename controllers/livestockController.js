@@ -1,3 +1,4 @@
+const { default: mongoose } = require("mongoose");
 const Farmer = require("../model/Farmer");
 const Livestock = require("../model/Livestock");
 
@@ -355,10 +356,151 @@ const getBrangayRecords = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+const getTotalLivestockMortality = async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    if (!id) return res.sendStatus(400);
+    const farmerObjectId = new mongoose.Types.ObjectId(id);
+    const totals = await Livestock.aggregate([
+      {
+        $match: { farmerID: farmerObjectId }, // Filters by farmerID
+      },
+      {
+        $group: {
+          _id: null, // Combine all documents for the farmer into a single group
+          totalCowL: { $sum: "$livestock.cow" },
+          totalGoatL: { $sum: "$livestock.goat" },
+          totalChickenL: { $sum: "$livestock.chicken" },
+          totalDuckL: { $sum: "$livestock.duck" },
+          totalCarabaoL: { $sum: "$livestock.carabao" },
+          totalPigL: { $sum: "$livestock.pig" },
+          totalHorseL: { $sum: "$livestock.horse" },
+          totalCowM: { $sum: "$mortality.cow" },
+          totalGoatM: { $sum: "$mortality.goat" },
+          totalChickenM: { $sum: "$mortality.chicken" },
+          totalDuckM: { $sum: "$mortality.duck" },
+          totalCarabaoM: { $sum: "$mortality.carabao" },
+          totalPigM: { $sum: "$mortality.pig" },
+          totalHorseM: { $sum: "$mortality.horse" },
+        },
+      },
+      {
+        $project: {
+          _id: 0, // Exclude the `_id` field from the output
+          livestock: {
+            $add: [
+              "$totalCowL",
+              "$totalGoatL",
+              "$totalChickenL",
+              "$totalDuckL",
+              "$totalCarabaoL",
+              "$totalPigL",
+              "$totalHorseL",
+            ],
+          },
+          mortality: {
+            $add: [
+              "$totalCowM",
+              "$totalGoatM",
+              "$totalChickenM",
+              "$totalDuckM",
+              "$totalCarabaoM",
+              "$totalPigM",
+              "$totalHorseM",
+            ],
+          },
+        },
+      },
+    ]);
+
+    const data = [
+      {
+        name: "Livestocks",
+        population: totals[0].livestock,
+        color: "#A8DFE1",
+        legendFontColor: "#A8DFE1",
+        legendFontSize: 15,
+      },
+      {
+        name: "Mortality",
+        population: totals[0].mortality,
+        color: "#FFB1C1",
+        legendFontColor: "#FFB1C1",
+        legendFontSize: 15,
+      },
+    ];
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const getLivesstockMobileDashboard = async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.sendStatus(400);
+
+    const farmerObjectId = new mongoose.Types.ObjectId(id);
+
+    const totals = await Livestock.aggregate([
+      {
+        $match: { farmerID: farmerObjectId }, // Filters by farmerID
+      },
+      {
+        $group: {
+          _id: null, // Combine all documents for the farmer into a single group
+          totalCow: { $sum: "$livestock.cow" },
+          totalGoat: { $sum: "$livestock.goat" },
+          totalChicken: { $sum: "$livestock.chicken" },
+          totalDuck: { $sum: "$livestock.duck" },
+          totalCarabao: { $sum: "$livestock.carabao" },
+          totalPig: { $sum: "$livestock.pig" },
+          totalHorse: { $sum: "$livestock.horse" },
+        },
+      },
+    ]);
+
+    if (!totals.length) {
+      return res
+        .status(404)
+        .json({ message: "No livestock data found for this farmer" });
+    }
+
+    // Format the output for the chart
+    const data = {
+      labels: ["Cow", "Goat", "Chicken", "Duck", "Carabao", "Pig", "Horse"],
+      datasets: [
+        {
+          data: [
+            totals[0].totalCow || 0,
+            totals[0].totalGoat || 0,
+            totals[0].totalChicken || 0,
+            totals[0].totalDuck || 0,
+            totals[0].totalCarabao || 0,
+            totals[0].totalPig || 0,
+            totals[0].totalHorse || 0,
+          ],
+        },
+      ],
+    };
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 module.exports = {
   getHeatmapData,
   getTotalCountLivestock,
   handleUpdateLivestock,
   getYearlyRecordData,
   getBrangayRecords,
+  getTotalLivestockMortality,
+  getLivesstockMobileDashboard,
 };
