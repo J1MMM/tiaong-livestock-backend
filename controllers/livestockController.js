@@ -317,6 +317,168 @@ const getYearlyRecordData = async (req, res) => {
   }
 };
 
+const getFarmerYearlyLivestocks = async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.sendStatus(400);
+
+    const date = new Date();
+    const year = date.getFullYear();
+    const farmerObjectId = new mongoose.Types.ObjectId(id);
+    const result = await Livestock.aggregate([
+      {
+        $match: {
+          farmerID: farmerObjectId,
+          createdAt: {
+            $gte: new Date(`${year}-01-01`), // Start of the year
+            $lt: new Date(`${year + 1}-01-01`), // Start of next year
+          },
+        },
+      },
+      {
+        $project: {
+          month: { $month: "$createdAt" }, // Extract month from the createdAt date
+          livestock: 1,
+          mortality: 1,
+        },
+      },
+      {
+        $group: {
+          _id: "$month",
+          totalCowL: { $sum: "$livestock.cow" },
+          totalGoatL: { $sum: "$livestock.goat" },
+          totalChickenL: { $sum: "$livestock.chicken" },
+          totalDuckL: { $sum: "$livestock.duck" },
+          totalCarabaoL: { $sum: "$livestock.carabao" },
+          totalPigL: { $sum: "$livestock.pig" },
+          totalHorseL: { $sum: "$livestock.horse" },
+          totalCowM: { $sum: "$mortality.cow" },
+          totalGoatM: { $sum: "$mortality.goat" },
+          totalChickenM: { $sum: "$mortality.chicken" },
+          totalDuckM: { $sum: "$mortality.duck" },
+          totalCarabaoM: { $sum: "$mortality.carabao" },
+          totalPigM: { $sum: "$mortality.pig" },
+          totalHorseM: { $sum: "$mortality.horse" },
+        },
+      },
+      {
+        $sort: { _id: 1 }, // Sort by month
+      },
+    ]);
+
+    // Initialize arrays with null for 12 months
+    const livestockData = new Array(12).fill(0);
+    const mortalityData = new Array(12).fill(0);
+
+    // Loop through the result to populate the monthly data
+    result.forEach((item) => {
+      const monthIndex = item._id - 1; // MongoDB months are 1-based, so subtract 1 to align with the 0-based index
+      livestockData[monthIndex] =
+        item.totalCowL +
+        item.totalGoatL +
+        item.totalChickenL +
+        item.totalDuckL +
+        item.totalCarabaoL +
+        item.totalPigL +
+        item.totalHorseL;
+      mortalityData[monthIndex] =
+        item.totalCowM +
+        item.totalGoatM +
+        item.totalChickenM +
+        item.totalDuckM +
+        item.totalCarabaoM +
+        item.totalPigM +
+        item.totalHorseM;
+    });
+
+    res.json(livestockData); // Send the response
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const getFarmerYearlyMoratlity = async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.sendStatus(400);
+
+    const date = new Date();
+    const year = date.getFullYear();
+    const farmerObjectId = new mongoose.Types.ObjectId(id);
+    const result = await Livestock.aggregate([
+      {
+        $match: {
+          farmerID: farmerObjectId,
+          createdAt: {
+            $gte: new Date(`${year}-01-01`), // Start of the year
+            $lt: new Date(`${year + 1}-01-01`), // Start of next year
+          },
+        },
+      },
+      {
+        $project: {
+          month: { $month: "$createdAt" }, // Extract month from the createdAt date
+          livestock: 1,
+          mortality: 1,
+        },
+      },
+      {
+        $group: {
+          _id: "$month",
+          totalCowL: { $sum: "$livestock.cow" },
+          totalGoatL: { $sum: "$livestock.goat" },
+          totalChickenL: { $sum: "$livestock.chicken" },
+          totalDuckL: { $sum: "$livestock.duck" },
+          totalCarabaoL: { $sum: "$livestock.carabao" },
+          totalPigL: { $sum: "$livestock.pig" },
+          totalHorseL: { $sum: "$livestock.horse" },
+          totalCowM: { $sum: "$mortality.cow" },
+          totalGoatM: { $sum: "$mortality.goat" },
+          totalChickenM: { $sum: "$mortality.chicken" },
+          totalDuckM: { $sum: "$mortality.duck" },
+          totalCarabaoM: { $sum: "$mortality.carabao" },
+          totalPigM: { $sum: "$mortality.pig" },
+          totalHorseM: { $sum: "$mortality.horse" },
+        },
+      },
+      {
+        $sort: { _id: 1 }, // Sort by month
+      },
+    ]);
+
+    // Initialize arrays with null for 12 months
+    const livestockData = new Array(12).fill(0);
+    const mortalityData = new Array(12).fill(0);
+
+    // Loop through the result to populate the monthly data
+    result.forEach((item) => {
+      const monthIndex = item._id - 1; // MongoDB months are 1-based, so subtract 1 to align with the 0-based index
+      livestockData[monthIndex] =
+        item.totalCowL +
+        item.totalGoatL +
+        item.totalChickenL +
+        item.totalDuckL +
+        item.totalCarabaoL +
+        item.totalPigL +
+        item.totalHorseL;
+      mortalityData[monthIndex] =
+        item.totalCowM +
+        item.totalGoatM +
+        item.totalChickenM +
+        item.totalDuckM +
+        item.totalCarabaoM +
+        item.totalPigM +
+        item.totalHorseM;
+    });
+
+    res.json(mortalityData); // Send the response
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const getBrangayRecords = async (req, res) => {
   try {
     const result = await Livestock.aggregate([
@@ -471,24 +633,17 @@ const getLivesstockMobileDashboard = async (req, res) => {
     }
 
     // Format the output for the chart
-    const data = {
-      labels: ["Cow", "Goat", "Chicken", "Duck", "Carabao", "Pig", "Horse"],
-      datasets: [
-        {
-          data: [
-            totals[0].totalCow || 0,
-            totals[0].totalGoat || 0,
-            totals[0].totalChicken || 0,
-            totals[0].totalDuck || 0,
-            totals[0].totalCarabao || 0,
-            totals[0].totalPig || 0,
-            totals[0].totalHorse || 0,
-          ],
-        },
-      ],
-    };
+    const data = [
+      totals[0].totalCow || 0,
+      totals[0].totalGoat || 0,
+      totals[0].totalChicken || 0,
+      totals[0].totalDuck || 0,
+      totals[0].totalCarabao || 0,
+      totals[0].totalPig || 0,
+      totals[0].totalHorse || 0,
+    ];
 
-    return res.status(200).json(data);
+    return res.status(200).json(data || []);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
@@ -503,4 +658,6 @@ module.exports = {
   getBrangayRecords,
   getTotalLivestockMortality,
   getLivesstockMobileDashboard,
+  getFarmerYearlyLivestocks,
+  getFarmerYearlyMoratlity,
 };
