@@ -5,6 +5,7 @@ const nodeMailer = require("nodemailer");
 const { v4 } = require("uuid");
 const emailFormat = require("../helper/emailFormat");
 const dayjs = require("dayjs");
+const resetPassEmail = require("../helper/resetPass");
 
 function generateVerificationCode() {
   return v4().replace(/-/g, "").slice(0, 8); // Adjust slice length as needed
@@ -300,16 +301,23 @@ const resendVerification = async (req, res) => {
 };
 
 const verifyCode = async (req, res) => {
+  console.log("ok");
+
   try {
     const { verificationCode, id } = req.body;
+
     if (!verificationCode || !id) {
       return res.status(400).json({ message: "Bad Request" });
     }
 
     const foundUser = await Farmer.findOne({ _id: id });
+
     if (!foundUser) {
       return res.status(401).json({ message: "Unauthorized: User not found" });
     }
+
+    console.log(foundUser.verificationCode);
+    console.log(verificationCode);
 
     if (foundUser.verificationCode !== verificationCode) {
       return res.status(400).json({ message: "Invalid verification code" });
@@ -457,6 +465,74 @@ const handleRefreshToken = async (req, res) => {
   });
 };
 
+const resetPass = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.sendStatus(400);
+
+    const foundUser = await Farmer.findOne({
+      email,
+      archive: false,
+      emailVerified: true,
+      isApprove: true,
+    });
+    if (!foundUser) return res.sendStatus(400);
+    const verificationCode = generateVerificationCode();
+    foundUser.verificationCode = verificationCode;
+    const html = resetPassEmail(verificationCode);
+
+    foundUser.save();
+
+    const transport = nodeMailer.createTransport({
+      host: "smtp.gmail.com",
+      port: "587",
+      secure: false,
+      auth: {
+        user: "devjim.emailservice@gmail.com",
+        pass: "vfxdypfebqvgiiyn",
+      },
+    });
+
+    const info = await transport.sendMail({
+      from: "Livestock Management System <livestock.management.system@email.com>",
+      to: email,
+      subject: "Reset Password",
+      html: html,
+    });
+
+    res.status(200).json({ id: foundUser._id });
+  } catch (error) {
+    console.log({ message: error.message });
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const handleChangePass = async (req, res) => {
+  try {
+    const { id, password, password2 } = req.body;
+    if (!id || !password || !password2) return res.sendStatus(400);
+
+    const passwordMatch = password === password2;
+    if (!passwordMatch)
+      return res.status(409).json({ message: "Passwords do not match." }); // Conflict
+
+    const foundUser = await Farmer.findOne({
+      _id: id,
+    });
+    if (!foundUser) return res.sendStatus(400);
+
+    const hashedPwd = await bcrypt.hash(password, 10);
+
+    foundUser.password = hashedPwd;
+    foundUser.save();
+
+    res.sendStatus(200);
+  } catch (error) {
+    console.log({ message: error.message });
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getFarmersData,
   getFarmersArchivedData,
@@ -467,4 +543,6 @@ module.exports = {
   verifyCode,
   savePendingAccount,
   handleRefreshToken,
+  resetPass,
+  handleChangePass,
 };

@@ -20,12 +20,6 @@ const userSchema = new Schema({
     required: true,
   },
   refreshToken: String,
-  roles: {
-    admin: {
-      type: Number,
-      default: 0,
-    },
-  },
 
   archive: {
     type: Boolean,

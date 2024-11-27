@@ -1,7 +1,6 @@
 const bcrypt = require("bcrypt");
 const User = require("../model/User");
 const nodeMailer = require("nodemailer");
-const ROLES_LIST = require("../config/roles_list");
 
 const getAllUsers = async (req, res) => {
   try {
@@ -81,8 +80,6 @@ const updateUser = async (req, res) => {
     if (req?.body?.email) user.email = req.body.email;
     if (req?.body?.password)
       user.password = await bcrypt.hash(req.body.password, 10);
-    if (req?.body?.role)
-      user.roles = { [req.body.role]: ROLES_LIST[req.body.role] };
 
     const result = await user.save();
     res.json({ success: "User updated successfully!", result });

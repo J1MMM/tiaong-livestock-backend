@@ -16,13 +16,11 @@ const handleRefreshToken = async (req, res) => {
   // evaluate jwt
   jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
     if (err || decoded.email !== foundUser.email) return res.sendStatus(403);
-    const roles = Object.values(foundUser.roles);
     const accessToken = jwt.sign(
       {
         UserInfo: {
           id: id,
           email: decoded.email,
-          roles: roles,
           fullname: fullname,
         },
       },
@@ -30,7 +28,7 @@ const handleRefreshToken = async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ accessToken, roles, fullname, email });
+    res.json({ accessToken, fullname, email });
   });
 };
 
