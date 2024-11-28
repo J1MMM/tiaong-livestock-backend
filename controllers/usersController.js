@@ -32,6 +32,8 @@ const createUser = async (req, res) => {
     return res
       .status(409)
       .json({ message: "This Email Address is Already in use" }); //confilict
+  if (accountDetails.password !== accountDetails.password2)
+    return res.status(409).json({ message: "Password do not match" }); //confilict
 
   try {
     const hashedPwd = await bcrypt.hash(accountDetails.password, 10);
