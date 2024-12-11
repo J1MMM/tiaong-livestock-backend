@@ -12,6 +12,7 @@ const handleLogin = async (req, res) => {
     const foundUser = await User.findOne({
       email: email,
       archive: false,
+      verified: true,
     });
     if (!foundUser)
       return res.status(401).json({ message: "Unauthorized: User not found" });

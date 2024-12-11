@@ -104,6 +104,31 @@ const handleFarmersArchive = async (req, res) => {
   }
 };
 
+const handleFarmersRestore = async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ message: `Bad request` });
+
+    const foundUser = await Farmer.findOne({
+      _id: id,
+      archive: true,
+      emailVerified: true,
+      isApprove: true,
+    });
+
+    if (!foundUser)
+      return res.status(404).json({ message: `User with ${id} ID not found` });
+
+    foundUser.archive = false;
+
+    await foundUser.save();
+    res.sendStatus(200);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 const handleLogin = async (req, res) => {
   console.log("login");
   const { referenceNo, password } = req.body;
@@ -545,4 +570,5 @@ module.exports = {
   handleRefreshToken,
   resetPass,
   handleChangePass,
+  handleFarmersRestore,
 };

@@ -1,6 +1,12 @@
 const bcrypt = require("bcrypt");
 const User = require("../model/User");
 const nodeMailer = require("nodemailer");
+const emailFormat = require("../helper/emailFormat");
+const { v4 } = require("uuid");
+
+function generateVerificationCode() {
+  return v4().replace(/-/g, "").slice(0, 8); // Adjust slice length as needed
+}
 
 const getAllUsers = async (req, res) => {
   try {
@@ -27,7 +33,12 @@ const createUser = async (req, res) => {
   if (!accountDetails)
     return res.status(400).json({ message: "All fields are required" });
 
-  const duplicate = await User.findOne({ email: accountDetails.email }).exec();
+  const duplicate = await User.findOne({
+    email: accountDetails.email,
+    verified: true,
+    archive: false,
+  }).exec();
+
   if (duplicate)
     return res
       .status(409)
@@ -38,14 +49,47 @@ const createUser = async (req, res) => {
   try {
     const hashedPwd = await bcrypt.hash(accountDetails.password, 10);
 
-    const result = await User.create({
-      ...accountDetails,
-      password: hashedPwd,
+    const verificationCode = generateVerificationCode();
+
+    const transport = nodeMailer.createTransport({
+      host: "smtp.gmail.com",
+      port: "587",
+      secure: false,
+      auth: {
+        user: "devjim.emailservice@gmail.com",
+        pass: "vfxdypfebqvgiiyn",
+      },
     });
 
+    const html = emailFormat(verificationCode);
+
+    const info = await transport.sendMail({
+      from: "Livestock Management System <livestock.management.system@email.com>",
+      to: accountDetails.email,
+      subject: verificationCode,
+      html: html,
+    });
+
+    const foundUser = await User.findOne({ email: accountDetails.email });
+    let userID = "";
+
+    if (foundUser) {
+      foundUser.otp = verificationCode;
+      foundUser.password = hashedPwd;
+      userID = foundUser.id;
+      await foundUser.save();
+    } else {
+      const result = await User.create({
+        ...accountDetails,
+        password: hashedPwd,
+        otp: verificationCode,
+      });
+      userID = result.id;
+    }
+
     res.status(201).json({
-      success: `New user has been created successfully!`,
-      result,
+      success: `Verification email sent! Please check your inbox (and spam/junk folder) to verify your account.`,
+      result: { _id: userID },
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -142,6 +186,34 @@ const getUser = async (req, res) => {
   }
 };
 
+const verifyCode = async (req, res) => {
+  try {
+    const { otp, id } = req.body;
+
+    if (!otp || !id) {
+      return res.status(400).json({ message: "Bad Request" });
+    }
+
+    const foundUser = await User.findOne({ _id: id });
+
+    if (!foundUser) {
+      return res.status(401).json({ message: "Unauthorized: User not found" });
+    }
+
+    if (foundUser.otp !== otp) {
+      return res.status(400).json({ message: "Invalid verification code" });
+    }
+
+    foundUser.verified = true;
+    await foundUser.save();
+
+    // Additional code for successful verification (if any) would go here
+    return res.status(200).json({ message: "Verification successful" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllUsers,
   createUser,
@@ -150,4 +222,5 @@ module.exports = {
   getUser,
   archiveUser,
   checkEmailDuplication,
+  verifyCode,
 };

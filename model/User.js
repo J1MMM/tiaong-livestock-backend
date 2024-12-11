@@ -26,6 +26,11 @@ const userSchema = new Schema({
     require: true,
     default: false,
   },
+  verified: {
+    type: Boolean,
+    require: true,
+    default: false,
+  },
   otp: {
     type: String,
   },
