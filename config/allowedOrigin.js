@@ -1,5 +1,5 @@
 const allowedOrigins = [
-  "https://spctmo.vercel.app",
+  "https://tiaong-livestock-frontend.vercel.app",
   "https://vercel.com",
   "http://localhost:5173",
 ];
