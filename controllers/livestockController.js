@@ -102,22 +102,106 @@ const getHeatmapData = async (req, res) => {
           _id: 0,
           barangay: "$_id",
           livestock: {
-            cow: { $divide: ["$totalCowL", total.livestock.cow] },
-            goat: { $divide: ["$totalGoatL", total.livestock.goat] },
-            chicken: { $divide: ["$totalChickenL", total.livestock.chicken] },
-            duck: { $divide: ["$totalDuckL", total.livestock.duck] },
-            carabao: { $divide: ["$totalCarabaoL", total.livestock.carabao] },
-            pig: { $divide: ["$totalPigL", total.livestock.pig] },
-            horse: { $divide: ["$totalHorseL", total.livestock.horse] },
+            cow: {
+              $cond: {
+                if: { $eq: [total.livestock.cow, 0] },
+                then: 0,
+                else: { $divide: ["$totalCowL", total.livestock.cow] },
+              },
+            },
+            goat: {
+              $cond: {
+                if: { $eq: [total.livestock.goat, 0] },
+                then: 0,
+                else: { $divide: ["$totalGoatL", total.livestock.goat] },
+              },
+            },
+            chicken: {
+              $cond: {
+                if: { $eq: [total.livestock.chicken, 0] },
+                then: 0,
+                else: { $divide: ["$totalChickenL", total.livestock.chicken] },
+              },
+            },
+            duck: {
+              $cond: {
+                if: { $eq: [total.livestock.duck, 0] },
+                then: 0,
+                else: { $divide: ["$totalDuckL", total.livestock.duck] },
+              },
+            },
+            carabao: {
+              $cond: {
+                if: { $eq: [total.livestock.carabao, 0] },
+                then: 0,
+                else: { $divide: ["$totalCarabaoL", total.livestock.carabao] },
+              },
+            },
+            pig: {
+              $cond: {
+                if: { $eq: [total.livestock.pig, 0] },
+                then: 0,
+                else: { $divide: ["$totalPigL", total.livestock.pig] },
+              },
+            },
+            horse: {
+              $cond: {
+                if: { $eq: [total.livestock.horse, 0] },
+                then: 0,
+                else: { $divide: ["$totalHorseL", total.livestock.horse] },
+              },
+            },
           },
           mortality: {
-            cow: { $divide: ["$totalCowM", total.mortality.cow] },
-            goat: { $divide: ["$totalGoatM", total.mortality.goat] },
-            chicken: { $divide: ["$totalChickenM", total.mortality.chicken] },
-            duck: { $divide: ["$totalDuckM", total.mortality.duck] },
-            carabao: { $divide: ["$totalCarabaoM", total.mortality.carabao] },
-            pig: { $divide: ["$totalPigM", total.mortality.pig] },
-            horse: { $divide: ["$totalHorseM", total.mortality.horse] },
+            cow: {
+              $cond: {
+                if: { $eq: [total.mortality.cow, 0] },
+                then: 0,
+                else: { $divide: ["$totalCowM", total.mortality.cow] },
+              },
+            },
+            goat: {
+              $cond: {
+                if: { $eq: [total.mortality.goat, 0] },
+                then: 0,
+                else: { $divide: ["$totalGoatM", total.mortality.goat] },
+              },
+            },
+            chicken: {
+              $cond: {
+                if: { $eq: [total.mortality.chicken, 0] },
+                then: 0,
+                else: { $divide: ["$totalChickenM", total.mortality.chicken] },
+              },
+            },
+            duck: {
+              $cond: {
+                if: { $eq: [total.mortality.duck, 0] },
+                then: 0,
+                else: { $divide: ["$totalDuckM", total.mortality.duck] },
+              },
+            },
+            carabao: {
+              $cond: {
+                if: { $eq: [total.mortality.carabao, 0] },
+                then: 0,
+                else: { $divide: ["$totalCarabaoM", total.mortality.carabao] },
+              },
+            },
+            pig: {
+              $cond: {
+                if: { $eq: [total.mortality.pig, 0] },
+                then: 0,
+                else: { $divide: ["$totalPigM", total.mortality.pig] },
+              },
+            },
+            horse: {
+              $cond: {
+                if: { $eq: [total.mortality.horse, 0] },
+                then: 0,
+                else: { $divide: ["$totalHorseM", total.mortality.horse] },
+              },
+            },
           },
         },
       },
