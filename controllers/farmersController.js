@@ -141,7 +141,7 @@ const handleLogin = async (req, res) => {
   try {
     console.log(password);
     const foundUser = await Farmer.findOne({
-      $or: [{ email: referenceNo }, { referenceNo: referenceNo }],
+      referenceNo: referenceNo,
       archive: false,
       emailVerified: true,
       // isApprove: true, // Uncomment if needed

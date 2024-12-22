@@ -73,9 +73,149 @@ const getTotalCountLivestock = async (req, res) => {
   }
 };
 
+function getLivestockFrequency(number) {
+  if (number >= 100) {
+    return 1; // High Frequency
+  } else if (number >= 50 && number <= 99) {
+    return 0.5; // Moderate Frequency
+  } else {
+    return 0.1; // Low Frequency
+  }
+}
+
 const getHeatmapData = async (req, res) => {
   try {
     const total = await getTotalPopulation();
+
+    // const result = await Livestock.aggregate([
+    //   {
+    //     $group: {
+    //       _id: "$barangay",
+    //       totalCowL: { $sum: "$livestock.cow" },
+    //       totalGoatL: { $sum: "$livestock.goat" },
+    //       totalChickenL: { $sum: "$livestock.chicken" },
+    //       totalDuckL: { $sum: "$livestock.duck" },
+    //       totalCarabaoL: { $sum: "$livestock.carabao" },
+    //       totalPigL: { $sum: "$livestock.pig" },
+    //       totalHorseL: { $sum: "$livestock.horse" },
+    //       totalCowM: { $sum: "$mortality.cow" },
+    //       totalGoatM: { $sum: "$mortality.goat" },
+    //       totalChickenM: { $sum: "$mortality.chicken" },
+    //       totalDuckM: { $sum: "$mortality.duck" },
+    //       totalCarabaoM: { $sum: "$mortality.carabao" },
+    //       totalPigM: { $sum: "$mortality.pig" },
+    //       totalHorseM: { $sum: "$mortality.horse" },
+    //     },
+    //   },
+    //   {
+    //     $project: {
+    //       _id: 0,
+    //       barangay: "$_id",
+    //       livestock: {
+    //         cow: {
+    //           $cond: {
+    //             if: { $eq: [total.livestock.cow, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalCowL", total.livestock.cow] },
+    //           },
+    //         },
+    //         goat: {
+    //           $cond: {
+    //             if: { $eq: [total.livestock.goat, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalGoatL", total.livestock.goat] },
+    //           },
+    //         },
+    //         chicken: {
+    //           $cond: {
+    //             if: { $eq: [total.livestock.chicken, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalChickenL", total.livestock.chicken] },
+    //           },
+    //         },
+    //         duck: {
+    //           $cond: {
+    //             if: { $eq: [total.livestock.duck, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalDuckL", total.livestock.duck] },
+    //           },
+    //         },
+    //         carabao: {
+    //           $cond: {
+    //             if: { $eq: [total.livestock.carabao, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalCarabaoL", total.livestock.carabao] },
+    //           },
+    //         },
+    //         pig: {
+    //           $cond: {
+    //             if: { $eq: [total.livestock.pig, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalPigL", total.livestock.pig] },
+    //           },
+    //         },
+    //         horse: {
+    //           $cond: {
+    //             if: { $eq: [total.livestock.horse, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalHorseL", total.livestock.horse] },
+    //           },
+    //         },
+    //       },
+    //       mortality: {
+    //         cow: {
+    //           $cond: {
+    //             if: { $eq: [total.mortality.cow, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalCowM", total.mortality.cow] },
+    //           },
+    //         },
+    //         goat: {
+    //           $cond: {
+    //             if: { $eq: [total.mortality.goat, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalGoatM", total.mortality.goat] },
+    //           },
+    //         },
+    //         chicken: {
+    //           $cond: {
+    //             if: { $eq: [total.mortality.chicken, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalChickenM", total.mortality.chicken] },
+    //           },
+    //         },
+    //         duck: {
+    //           $cond: {
+    //             if: { $eq: [total.mortality.duck, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalDuckM", total.mortality.duck] },
+    //           },
+    //         },
+    //         carabao: {
+    //           $cond: {
+    //             if: { $eq: [total.mortality.carabao, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalCarabaoM", total.mortality.carabao] },
+    //           },
+    //         },
+    //         pig: {
+    //           $cond: {
+    //             if: { $eq: [total.mortality.pig, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalPigM", total.mortality.pig] },
+    //           },
+    //         },
+    //         horse: {
+    //           $cond: {
+    //             if: { $eq: [total.mortality.horse, 0] },
+    //             then: 0,
+    //             else: { $divide: ["$totalHorseM", total.mortality.horse] },
+    //           },
+    //         },
+    //       },
+    //     },
+    //   },
+    // ]);
 
     const result = await Livestock.aggregate([
       {
@@ -102,152 +242,92 @@ const getHeatmapData = async (req, res) => {
           _id: 0,
           barangay: "$_id",
           livestock: {
-            cow: {
-              $cond: {
-                if: { $eq: [total.livestock.cow, 0] },
-                then: 0,
-                else: { $divide: ["$totalCowL", total.livestock.cow] },
-              },
-            },
-            goat: {
-              $cond: {
-                if: { $eq: [total.livestock.goat, 0] },
-                then: 0,
-                else: { $divide: ["$totalGoatL", total.livestock.goat] },
-              },
-            },
-            chicken: {
-              $cond: {
-                if: { $eq: [total.livestock.chicken, 0] },
-                then: 0,
-                else: { $divide: ["$totalChickenL", total.livestock.chicken] },
-              },
-            },
-            duck: {
-              $cond: {
-                if: { $eq: [total.livestock.duck, 0] },
-                then: 0,
-                else: { $divide: ["$totalDuckL", total.livestock.duck] },
-              },
-            },
-            carabao: {
-              $cond: {
-                if: { $eq: [total.livestock.carabao, 0] },
-                then: 0,
-                else: { $divide: ["$totalCarabaoL", total.livestock.carabao] },
-              },
-            },
-            pig: {
-              $cond: {
-                if: { $eq: [total.livestock.pig, 0] },
-                then: 0,
-                else: { $divide: ["$totalPigL", total.livestock.pig] },
-              },
-            },
-            horse: {
-              $cond: {
-                if: { $eq: [total.livestock.horse, 0] },
-                then: 0,
-                else: { $divide: ["$totalHorseL", total.livestock.horse] },
-              },
-            },
+            cow: "$totalCowL",
+            goat: "$totalGoatL",
+            chicken: "$totalChickenL",
+            duck: "$totalDuckL",
+            carabao: "$totalCarabaoL",
+            pig: "$totalPigL",
+            horse: "$totalHorseL",
           },
           mortality: {
-            cow: {
-              $cond: {
-                if: { $eq: [total.mortality.cow, 0] },
-                then: 0,
-                else: { $divide: ["$totalCowM", total.mortality.cow] },
-              },
-            },
-            goat: {
-              $cond: {
-                if: { $eq: [total.mortality.goat, 0] },
-                then: 0,
-                else: { $divide: ["$totalGoatM", total.mortality.goat] },
-              },
-            },
-            chicken: {
-              $cond: {
-                if: { $eq: [total.mortality.chicken, 0] },
-                then: 0,
-                else: { $divide: ["$totalChickenM", total.mortality.chicken] },
-              },
-            },
-            duck: {
-              $cond: {
-                if: { $eq: [total.mortality.duck, 0] },
-                then: 0,
-                else: { $divide: ["$totalDuckM", total.mortality.duck] },
-              },
-            },
-            carabao: {
-              $cond: {
-                if: { $eq: [total.mortality.carabao, 0] },
-                then: 0,
-                else: { $divide: ["$totalCarabaoM", total.mortality.carabao] },
-              },
-            },
-            pig: {
-              $cond: {
-                if: { $eq: [total.mortality.pig, 0] },
-                then: 0,
-                else: { $divide: ["$totalPigM", total.mortality.pig] },
-              },
-            },
-            horse: {
-              $cond: {
-                if: { $eq: [total.mortality.horse, 0] },
-                then: 0,
-                else: { $divide: ["$totalHorseM", total.mortality.horse] },
-              },
-            },
+            cow: "$totalCowM",
+            goat: "$totalGoatM",
+            chicken: "$totalChickenM",
+            duck: "$totalDuckM",
+            carabao: "$totalCarabaoM",
+            pig: "$totalPigM",
+            horse: "$totalHorseM",
           },
         },
       },
     ]);
 
+    // const adjustedResult = result.map((item) => ({
+    //   barangay: item.barangay,
+    //   livestock: {
+    //     cow: Number(Math.max(0.01, Math.min(item.livestock.cow, 1)).toFixed(3)),
+    //     goat: Number(
+    //       Math.max(0.01, Math.min(item.livestock.goat, 1)).toFixed(3)
+    //     ),
+    //     chicken: Number(
+    //       Math.max(0.01, Math.min(item.livestock.chicken, 1)).toFixed(3)
+    //     ),
+    //     duck: Number(
+    //       Math.max(0.01, Math.min(item.livestock.duck, 1)).toFixed(3)
+    //     ),
+    //     carabao: Number(
+    //       Math.max(0.01, Math.min(item.livestock.carabao, 1)).toFixed(3)
+    //     ),
+    //     pig: Number(Math.max(0.01, Math.min(item.livestock.pig, 1)).toFixed(3)),
+    //     horse: Number(
+    //       Math.max(0.01, Math.min(item.livestock.horse, 1)).toFixed(3)
+    //     ),
+    //   },
+    //   mortality: {
+    //     cow: Number(Math.max(0.01, Math.min(item.mortality.cow, 1)).toFixed(3)),
+    //     goat: Number(
+    //       Math.max(0.01, Math.min(item.mortality.goat, 1)).toFixed(3)
+    //     ),
+    //     chicken: Number(
+    //       Math.max(0.01, Math.min(item.mortality.chicken, 1)).toFixed(3)
+    //     ),
+    //     duck: Number(
+    //       Math.max(0.01, Math.min(item.mortality.duck, 1)).toFixed(3)
+    //     ),
+    //     carabao: Number(
+    //       Math.max(0.01, Math.min(item.mortality.carabao, 1)).toFixed(3)
+    //     ),
+    //     pig: Number(Math.max(0.01, Math.min(item.mortality.pig, 1)).toFixed(3)),
+    //     horse: Number(
+    //       Math.max(0.01, Math.min(item.mortality.horse, 1)).toFixed(3)
+    //     ),
+    //   },
+    // }));
+
     const adjustedResult = result.map((item) => ({
       barangay: item.barangay,
       livestock: {
-        cow: Number(Math.max(0.01, Math.min(item.livestock.cow, 1)).toFixed(3)),
-        goat: Number(
-          Math.max(0.01, Math.min(item.livestock.goat, 1)).toFixed(3)
-        ),
-        chicken: Number(
-          Math.max(0.01, Math.min(item.livestock.chicken, 1)).toFixed(3)
-        ),
-        duck: Number(
-          Math.max(0.01, Math.min(item.livestock.duck, 1)).toFixed(3)
-        ),
-        carabao: Number(
-          Math.max(0.01, Math.min(item.livestock.carabao, 1)).toFixed(3)
-        ),
-        pig: Number(Math.max(0.01, Math.min(item.livestock.pig, 1)).toFixed(3)),
-        horse: Number(
-          Math.max(0.01, Math.min(item.livestock.horse, 1)).toFixed(3)
-        ),
+        cow: getLivestockFrequency(item.livestock.cow),
+        goat: getLivestockFrequency(item.livestock.goat),
+        chicken: getLivestockFrequency(item.livestock.chicken),
+        duck: getLivestockFrequency(item.livestock.duck),
+        carabao: getLivestockFrequency(item.livestock.carabao),
+        pig: getLivestockFrequency(item.livestock.pig),
+        horse: getLivestockFrequency(item.livestock.horse),
       },
       mortality: {
-        cow: Number(Math.max(0.01, Math.min(item.mortality.cow, 1)).toFixed(3)),
-        goat: Number(
-          Math.max(0.01, Math.min(item.mortality.goat, 1)).toFixed(3)
-        ),
-        chicken: Number(
-          Math.max(0.01, Math.min(item.mortality.chicken, 1)).toFixed(3)
-        ),
-        duck: Number(
-          Math.max(0.01, Math.min(item.mortality.duck, 1)).toFixed(3)
-        ),
-        carabao: Number(
-          Math.max(0.01, Math.min(item.mortality.carabao, 1)).toFixed(3)
-        ),
-        pig: Number(Math.max(0.01, Math.min(item.mortality.pig, 1)).toFixed(3)),
-        horse: Number(
-          Math.max(0.01, Math.min(item.mortality.horse, 1)).toFixed(3)
-        ),
+        cow: getLivestockFrequency(item.mortality.cow),
+        goat: getLivestockFrequency(item.mortality.goat),
+        chicken: getLivestockFrequency(item.mortality.chicken),
+        duck: getLivestockFrequency(item.mortality.duck),
+        carabao: getLivestockFrequency(item.mortality.carabao),
+        pig: getLivestockFrequency(item.mortality.pig),
+        horse: getLivestockFrequency(item.mortality.horse),
       },
     }));
+    // console.log(result);
+    // console.log(adjustedResult);
 
     return res.status(200).json(adjustedResult);
   } catch (error) {
@@ -278,21 +358,46 @@ const handleUpdateLivestock = async (req, res) => {
       return res.status(404).json({ message: `User with ${id} ID not found` });
 
     const field = category === "Add Livestock" ? "livestock" : "mortality";
+    const specificLivestock = livestock?.toLowerCase();
 
     const recordData = {
       farmerID: foundUser._id,
       barangay: foundUser.barangay,
       createdAt: new Date(),
       [field]: {
-        [livestock?.toLowerCase()]: parseInt(count),
+        [specificLivestock]: parseInt(count),
       },
     };
-    // update farmers total livestock and mortality
-    const field2 =
-      category === "Add Livestock" ? "totalLivestock" : "totalMortality";
 
-    foundUser[field2] += parseInt(count);
-    foundUser.totalFarmPopulation += parseInt(count);
+    if (category === "Add Livestock") {
+      console.log("Adding livestock...");
+      foundUser.totalLivestock += parseInt(count, 10);
+      foundUser.totalFarmPopulation += parseInt(count);
+      foundUser.livestock[specificLivestock] += parseInt(count, 10);
+    } else {
+      if (foundUser.livestock[specificLivestock] != 0) {
+        console.log("Recording mortality...");
+        const newTotalLivestock =
+          foundUser.livestock[specificLivestock] - parseInt(count, 10);
+        if (newTotalLivestock >= 0) {
+          foundUser.totalMortality += parseInt(count, 10);
+          foundUser.totalLivestock = Math.max(newTotalLivestock, 0);
+
+          foundUser.mortality[specificLivestock] += parseInt(count, 10);
+          foundUser.livestock[specificLivestock] = Math.max(
+            newTotalLivestock,
+            0
+          );
+        } else {
+          return res.status(400).json({
+            message: `Mortality count is too large. Current livestock count of ${livestock} is ${foundUser.livestock[specificLivestock]}`,
+          });
+        }
+      } else {
+        return res.status(400).json({ message: `${livestock} doesn't exist.` });
+      }
+    }
+
     await foundUser.save();
 
     await Livestock.create(recordData);
@@ -603,11 +708,16 @@ const getBrangayRecords = async (req, res) => {
   }
 };
 
+function getTotalCount(obj) {
+  return Object.values(obj).reduce((total, value) => total + value, 0);
+}
+
 const getTotalLivestockMortality = async (req, res) => {
   try {
     const { id } = req.body;
 
     if (!id) return res.sendStatus(400);
+    const foundUser = await Farmer.findOne({ _id: id });
     const farmerObjectId = new mongoose.Types.ObjectId(id);
     const totals = await Livestock.aggregate([
       {
@@ -661,17 +771,34 @@ const getTotalLivestockMortality = async (req, res) => {
       },
     ]);
 
+    // const data = [
+    //   {
+    //     name: "Livestocks",
+    //     population: totals[0].livestock,
+    //     color: "#A8DFE1",
+    //     legendFontColor: "#A8DFE1",
+    //     legendFontSize: 15,
+    //   },
+    //   {
+    //     name: "Mortality",
+    //     population: totals[0].mortality,
+    //     color: "#FFB1C1",
+    //     legendFontColor: "#FFB1C1",
+    //     legendFontSize: 15,
+    //   },
+    // ];
+
     const data = [
       {
         name: "Livestocks",
-        population: totals[0].livestock,
+        population: getTotalCount(foundUser.livestock),
         color: "#A8DFE1",
         legendFontColor: "#A8DFE1",
         legendFontSize: 15,
       },
       {
         name: "Mortality",
-        population: totals[0].mortality,
+        population: getTotalCount(foundUser.mortality),
         color: "#FFB1C1",
         legendFontColor: "#FFB1C1",
         legendFontSize: 15,
@@ -689,7 +816,7 @@ const getLivesstockMobileDashboard = async (req, res) => {
   try {
     const { id } = req.body;
     if (!id) return res.sendStatus(400);
-
+    const foundUser = await Farmer.findOne({ _id: id });
     const farmerObjectId = new mongoose.Types.ObjectId(id);
 
     const totals = await Livestock.aggregate([
@@ -717,14 +844,24 @@ const getLivesstockMobileDashboard = async (req, res) => {
     }
 
     // Format the output for the chart
+    // const data = [
+    //   totals[0].totalCow || 0,
+    //   totals[0].totalGoat || 0,
+    //   totals[0].totalChicken || 0,
+    //   totals[0].totalDuck || 0,
+    //   totals[0].totalCarabao || 0,
+    //   totals[0].totalPig || 0,
+    //   totals[0].totalHorse || 0,
+    // ];
+
     const data = [
-      totals[0].totalCow || 0,
-      totals[0].totalGoat || 0,
-      totals[0].totalChicken || 0,
-      totals[0].totalDuck || 0,
-      totals[0].totalCarabao || 0,
-      totals[0].totalPig || 0,
-      totals[0].totalHorse || 0,
+      foundUser.livestock.cow || 0,
+      foundUser.livestock.goat || 0,
+      foundUser.livestock.chicken || 0,
+      foundUser.livestock.duck || 0,
+      foundUser.livestock.carabao || 0,
+      foundUser.livestock.pig || 0,
+      foundUser.livestock.horse || 0,
     ];
 
     return res.status(200).json(data || []);

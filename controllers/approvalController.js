@@ -3,6 +3,8 @@ const { BRGY_COOR } = require("../helper/shared");
 const Farmer = require("../model/Farmer");
 const rejectionEmailFormat = require("../helper/rejectionEmailFormat");
 const nodeMailer = require("nodemailer");
+const emailFormat = require("../helper/emailFormat");
+const approvalEmail = require("../helper/approvalEmail");
 
 const getApprovalData = async (req, res) => {
   try {
@@ -160,6 +162,24 @@ const handleApproval = async (req, res) => {
     foundUser.latitude = BRGY_COOR[foundUser.barangay].lat;
 
     await foundUser.save();
+
+    const transport = nodeMailer.createTransport({
+      host: "smtp.gmail.com",
+      port: "587",
+      secure: false,
+      auth: {
+        user: "devjim.emailservice@gmail.com",
+        pass: "vfxdypfebqvgiiyn",
+      },
+    });
+    const html = approvalEmail(referenceNo, foundUser.firstname);
+
+    const info = await transport.sendMail({
+      from: "Livestock Management System <livestock.management.system@email.com>",
+      to: foundUser.email,
+      subject: "ANI AT KITA RSBSA Approval Notification",
+      html: html,
+    });
     res.sendStatus(200);
   } catch (error) {
     console.log(error);
