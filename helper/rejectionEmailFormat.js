@@ -28,7 +28,14 @@ const rejectionEmailFormat = (firstname, rejectionList) => {
               ${rejectionList.join("\n  ")}
               </ul>
               
+              <p style="text-align: start;">To resolve this, we kindly request you to review and correct your application form. Please log in to your account using your email and password through the mobile login platform to access and update your form.</p>
               <p style="text-align: start;">We encourage you to submit a complete application with all required documents to ensure that your request is processed efficiently.</p>
+              <p style="text-align: start;">Thank you for your understanding.</p>
+
+              <p style="text-align: start;">Sincerely,</p>
+              <p style="text-align: start;">Livestock Management Admin</p>
+
+
               <hr />
               <p style="text-align: start;">© 2024 Livestock Management System. All Rights Reserved.</p>
           </div>

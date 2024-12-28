@@ -124,7 +124,7 @@ const handleReject = async (req, res) => {
     const info = await transport.sendMail({
       from: "Livestock Management System <livestock.management.system@email.com>",
       to: foundUser.email,
-      subject: "Notification of Rejected Application",
+      subject: "Notification of Rejected Application and Next Steps",
       html: html,
     });
 

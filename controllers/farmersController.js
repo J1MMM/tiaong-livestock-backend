@@ -139,13 +139,22 @@ const handleLogin = async (req, res) => {
   }
 
   try {
-    console.log(password);
-    const foundUser = await Farmer.findOne({
+    let foundUser;
+
+    foundUser = await Farmer.findOne({
       referenceNo: referenceNo,
       archive: false,
       emailVerified: true,
       // isApprove: true, // Uncomment if needed
     });
+
+    if (!foundUser) {
+      foundUser = await Farmer.findOne({
+        email: referenceNo,
+        archive: true,
+        emailVerified: true,
+      });
+    }
     if (!foundUser) {
       return res.status(401).json({ message: "Unauthorized: User not found" });
     }
@@ -191,10 +200,10 @@ const handleLogin = async (req, res) => {
     return res.json({
       ...farmerData,
       fullname,
-      userImage,
       accessToken,
       refreshToken,
       id: foundUser._id,
+      userImage,
     }); // Send back the data without password
   } catch (error) {
     console.error("Login Error: ", error);
@@ -431,6 +440,7 @@ const savePendingAccount = async (req, res) => {
         userImage: userImageBuffer,
         emailVerified: true,
         refreshToken: refreshToken,
+        archive: false,
       },
       { new: true } // Return the updated document
     );
@@ -458,6 +468,7 @@ const handleRefreshToken = async (req, res) => {
 
   const foundUser = await Farmer.findOne({
     refreshToken,
+    archive: false,
   });
   if (!foundUser) return res.status(403).json({ message: "Invalid Token" });
 
