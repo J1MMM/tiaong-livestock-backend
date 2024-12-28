@@ -6,7 +6,7 @@ const { v4 } = require("uuid");
 const resetPassEmail = require("../helper/resetPass");
 
 function generateVerificationCode() {
-  return v4().replace(/-/g, "").slice(0, 8); // Adjust slice length as needed
+  return Math.floor(10000000 + Math.random() * 90000000).toString();
 }
 
 const sendMail = async (req, res) => {

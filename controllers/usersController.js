@@ -5,7 +5,7 @@ const emailFormat = require("../helper/emailFormat");
 const { v4 } = require("uuid");
 
 function generateVerificationCode() {
-  return v4().replace(/-/g, "").slice(0, 8); // Adjust slice length as needed
+  return Math.floor(10000000 + Math.random() * 90000000).toString();
 }
 
 const getAllUsers = async (req, res) => {
