@@ -441,6 +441,7 @@ const savePendingAccount = async (req, res) => {
         emailVerified: true,
         refreshToken: refreshToken,
         archive: false,
+        registeredAt: Date.now(),
       },
       { new: true } // Return the updated document
     );
