@@ -17,7 +17,9 @@ const getFarmersData = async (req, res) => {
       isApprove: true,
       archive: false,
       emailVerified: true,
-    }).lean();
+    })
+      .sort({ registeredAt: -1 })
+      .lean();
 
     if (!result || result.length === 0)
       return res.status(204).json({ message: "No Pending Farmers Data found" });
