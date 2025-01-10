@@ -9,7 +9,7 @@ function getWeight(value, total) {
   return parseFloat(clamped.toFixed(3)); // Limit to 3 decimal places
 }
 
-const getTotalPopulation = async () => {
+const getTotalPopulation = async (req, res) => {
   try {
     const totals = await Livestock.aggregate([
       {
@@ -700,6 +700,40 @@ const getBrangayRecords = async (req, res) => {
         $sort: { barangay: 1 }, // Sort by barangay in ascending order (alphabetically)
       },
     ]);
+    console.log(result);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const getFarmersPerBrgy = async (req, res) => {
+  try {
+    const result = await Farmer.aggregate([
+      //total of farmer per barangay
+      {
+        $group: {
+          _id: "$barangay",
+          totalLivestock: { $sum: 1 },
+        },
+      },
+
+      {
+        $project: {
+          _id: 0, // Exclude the default MongoDB ID
+          barangay: "$_id", // Rename _id to barangay for clarity
+          totalLivestock: 1, // Include the totalLivestock field
+        },
+      },
+      {
+        $sort: { barangay: 1 }, // Sort by barangay in ascending order (alphabetically)
+      },
+    ]);
+
+    console.log("eto");
+    console.log(result);
 
     return res.status(200).json(result);
   } catch (error) {
@@ -881,4 +915,5 @@ module.exports = {
   getLivesstockMobileDashboard,
   getFarmerYearlyLivestocks,
   getFarmerYearlyMoratlity,
+  getFarmersPerBrgy,
 };

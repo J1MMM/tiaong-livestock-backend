@@ -160,6 +160,7 @@ const handleApproval = async (req, res) => {
     foundUser.bioSecLvl = bioSecLvl;
     foundUser.longitude = BRGY_COOR[foundUser.barangay].lng;
     foundUser.latitude = BRGY_COOR[foundUser.barangay].lat;
+    foundUser.registeredAt = Date.now();
 
     await foundUser.save();
 
