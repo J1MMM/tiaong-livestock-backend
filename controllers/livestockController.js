@@ -712,14 +712,21 @@ const getBrangayRecords = async (req, res) => {
 const getFarmersPerBrgy = async (req, res) => {
   try {
     const result = await Farmer.aggregate([
-      //total of farmer per barangay
+      // Match only farmers where archive is false and approved is true
+      {
+        $match: {
+          archive: false,
+          isApprove: true,
+        },
+      },
+      // Group by barangay and count the total number of farmers per barangay
       {
         $group: {
           _id: "$barangay",
           totalLivestock: { $sum: 1 },
         },
       },
-
+      // Project the fields you want in the output
       {
         $project: {
           _id: 0, // Exclude the default MongoDB ID
@@ -727,8 +734,9 @@ const getFarmersPerBrgy = async (req, res) => {
           totalLivestock: 1, // Include the totalLivestock field
         },
       },
+      // Sort by barangay in ascending order (alphabetically)
       {
-        $sort: { barangay: 1 }, // Sort by barangay in ascending order (alphabetically)
+        $sort: { barangay: 1 },
       },
     ]);
 
