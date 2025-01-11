@@ -78,9 +78,47 @@ const farmerSchema = new Schema({
 
   livelihood: { type: String, trim: true },
   livestockChecked: { type: Boolean, default: false },
-  livestockSpecify: { type: String, trim: true },
+  livestockSpecify: {
+    cow: {
+      type: Boolean,
+      default: false,
+    },
+    goat: {
+      type: Boolean,
+      default: false,
+    },
+    chicken: {
+      type: Boolean,
+      default: false,
+    },
+    duck: {
+      type: Boolean,
+      default: false,
+    },
+    carabao: {
+      type: Boolean,
+      default: false,
+    },
+    pig: {
+      type: Boolean,
+      default: false,
+    },
+    horse: {
+      type: Boolean,
+      default: false,
+    },
+  },
   poultryChecked: { type: Boolean, default: false },
-  poultrySpecify: { type: String, trim: true },
+  poultrySpecify: {
+    chicken: {
+      type: Boolean,
+      default: false,
+    },
+    duck: {
+      type: Boolean,
+      default: false,
+    },
+  },
 
   landPreparationChecked: { type: Boolean, default: false },
   harvestingChecked: { type: Boolean, default: false },

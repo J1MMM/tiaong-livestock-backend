@@ -147,13 +147,11 @@ const handleLogin = async (req, res) => {
       referenceNo: referenceNo,
       archive: false,
       emailVerified: true,
-      // isApprove: true, // Uncomment if needed
     });
 
     if (!foundUser) {
       foundUser = await Farmer.findOne({
         email: referenceNo,
-        archive: true,
         emailVerified: true,
       });
     }
